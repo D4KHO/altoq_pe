@@ -1,0 +1,293 @@
+.store-page-container {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+.error-message p {
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.retry-button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.retry-button:hover {
+  background-color: #2563eb;
+}
+
+.store-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.store-header {
+  background: white;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.store-banner {
+  height: 200px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.store-info {
+  padding: 2rem;
+}
+
+.store-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.store-description {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0 0 1rem 0;
+}
+
+.store-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.products-section {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1.5rem 0;
+}
+
+.no-products {
+  text-align: center;
+  color: #64748b;
+  padding: 2rem;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.product-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.product-image {
+  height: 200px;
+  overflow: hidden;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-info {
+  padding: 1rem;
+}
+
+.product-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.product-description {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+}
+
+.product-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.product-price {
+  font-weight: 700;
+  color: #3b82f6;
+  font-size: 1.125rem;
+}
+
+.product-rating {
+  color: #f59e0b;
+  font-size: 0.875rem;
+}
+
+.view-product-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.view-product-btn:hover {
+  transform: scale(1.02);
+}
+
+/* Tema Bakery (tortas, pasteles, dulces) */
+.theme-bakery .store-banner {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+}
+
+.theme-bakery .store-name {
+  color: #d97706;
+}
+
+.theme-bakery .product-price {
+  color: #d97706;
+}
+
+.theme-bakery .view-product-btn {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+}
+
+/* Tema Fashion (ropa, moda) */
+.theme-fashion .store-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.theme-fashion .store-name {
+  color: #7c3aed;
+}
+
+.theme-fashion .product-price {
+  color: #7c3aed;
+}
+
+.theme-fashion .view-product-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Tema Home (hogar, jardín) */
+.theme-home .store-banner {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.theme-home .store-name {
+  color: #059669;
+}
+
+.theme-home .product-price {
+  color: #059669;
+}
+
+.theme-home .view-product-btn {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+/* Tema Food (alimentos, comida) */
+.theme-food .store-banner {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.theme-food .store-name {
+  color: #e11d48;
+}
+
+.theme-food .product-price {
+  color: #e11d48;
+}
+
+.theme-food .view-product-btn {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* Tema Tech (tecnología, electrónica) */
+.theme-tech .store-banner {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.theme-tech .store-name {
+  color: #0284c7;
+}
+
+.theme-tech .product-price {
+  color: #0284c7;
+}
+
+.theme-tech .view-product-btn {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}

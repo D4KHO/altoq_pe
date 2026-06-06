@@ -1,0 +1,39 @@
+<section class="mx-auto max-w-4xl px-4 py-6">
+	<h2 class="text-2xl font-semibold text-slate-900">Carrito de Compras</h2>
+
+	<div *ngIf="cart.items.length > 0; else emptyCart" class="mt-6">
+		<div class="space-y-4">
+			<div *ngFor="let item of cart.items" class="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4">
+				<div class="flex-1">
+					<h3 class="text-base font-semibold text-slate-900">{{ item.name }}</h3>
+					<p class="text-sm text-slate-600">S/ {{ item.price | number:'1.2-2' }}</p>
+				</div>
+				<div class="flex items-center gap-2">
+					<button (click)="updateQuantity(item.productId, item.quantity - 1)" class="rounded-md bg-slate-100 px-3 py-1 text-sm font-medium text-slate-900 hover:bg-slate-200">-</button>
+					<span class="min-w-[2rem] text-center text-sm font-medium text-slate-900">{{ item.quantity }}</span>
+					<button (click)="updateQuantity(item.productId, item.quantity + 1)" class="rounded-md bg-slate-100 px-3 py-1 text-sm font-medium text-slate-900 hover:bg-slate-200">+</button>
+				</div>
+				<p class="min-w-[6rem] text-right text-base font-bold text-slate-900">S/ {{ (item.price * item.quantity) | number:'1.2-2' }}</p>
+				<button (click)="removeItem(item.productId)" class="rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-200">Eliminar</button>
+			</div>
+		</div>
+
+		<div class="mt-6 rounded-lg border border-slate-200 bg-white p-6">
+			<div class="flex items-center justify-between text-xl font-bold text-slate-900">
+				<span>Total:</span>
+				<span>S/ {{ cart.totalPrice | number:'1.2-2' }}</span>
+			</div>
+			<div class="mt-4 flex gap-3">
+				<button (click)="clearCart()" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Vaciar Carrito</button>
+				<a routerLink="/checkout" class="flex-1 rounded-md bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800">Proceder al Pago</a>
+			</div>
+		</div>
+	</div>
+
+	<ng-template #emptyCart>
+		<div class="mt-12 text-center">
+			<p class="text-lg text-slate-600">Tu carrito está vacío</p>
+			<a routerLink="/" class="mt-4 inline-block rounded-md bg-slate-900 px-6 py-2 text-sm font-medium text-white hover:bg-slate-800">Ir a Comprar</a>
+		</div>
+	</ng-template>
+</section>

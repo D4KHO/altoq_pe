@@ -1,0 +1,59 @@
+<div class="store-page-container" [ngClass]="getThemeClass()">
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando tienda...</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    <p>{{ errorMessage }}</p>
+    <button (click)="loadMyStore()" class="retry-button">Reintentar</button>
+  </div>
+
+  <div *ngIf="store && !isLoading" class="store-content">
+    <!-- Header de la tienda con tema -->
+    <div class="store-header">
+      <div class="store-banner"></div>
+      <div class="store-info">
+        <h1 class="store-name">{{ store.name }}</h1>
+        <p class="store-description">{{ store.description }}</p>
+        <div class="store-meta">
+          <span *ngIf="store.email" class="meta-item">
+            <span class="icon">📧</span> {{ store.email }}
+          </span>
+          <span *ngIf="store.phone" class="meta-item">
+            <span class="icon">📞</span> {{ store.phone }}
+          </span>
+          <span *ngIf="store.ruc" class="meta-item">
+            <span class="icon">📋</span> RUC: {{ store.ruc }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Productos de la tienda -->
+    <div class="products-section">
+      <h2 class="section-title">Productos de {{ store.name }}</h2>
+      
+      <div *ngIf="storeProducts.length === 0" class="no-products">
+        <p>Esta tienda aún no tiene productos.</p>
+      </div>
+      
+      <div class="products-grid">
+        <div *ngFor="let product of storeProducts" class="product-card">
+          <div class="product-image">
+            <img [src]="product.image || 'https://via.placeholder.com/300x200'" [alt]="product.name">
+          </div>
+          <div class="product-info">
+            <h3 class="product-name">{{ product.name }}</h3>
+            <p class="product-description">{{ product.description }}</p>
+            <div class="product-meta">
+              <span class="product-price">S/. {{ product.price }}</span>
+              <span class="product-rating">⭐ {{ product.rating }}</span>
+            </div>
+            <button class="view-product-btn">Ver Producto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

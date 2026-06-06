@@ -1,0 +1,122 @@
+<div class="become-seller-container">
+  <div class="form-card">
+    <h1>🏪 Conviértete en Vendedor</h1>
+    <p class="subtitle">Crea tu tienda y empieza a vender en ALTOQ</p>
+
+    <div class="mode-toggle">
+      <button 
+        (click)="toggleMode()" 
+        [class.active]="!useChatMode"
+        class="mode-button">
+        Formulario
+      </button>
+      <button 
+        (click)="toggleMode()" 
+        [class.active]="useChatMode"
+        class="mode-button">
+        Chat Guiado con Templates
+      </button>
+    </div>
+
+    <div *ngIf="successMessage" class="alert alert-success">
+      {{ successMessage }}
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Formulario tradicional -->
+    <form *ngIf="!useChatMode" (ngSubmit)="onSubmit()" [class.disabled]="isLoading">
+      <div class="form-group">
+        <label for="name">Nombre de la Tienda *</label>
+        <input 
+          type="text" 
+          id="name" 
+          name="name"
+          [(ngModel)]="storeData.name" 
+          required
+          placeholder="Ej: Mi Tienda Increíble"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email de la Tienda *</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email"
+          [(ngModel)]="storeData.email" 
+          required
+          placeholder="tienda@ejemplo.com"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="owner_name">Nombre del Propietario *</label>
+        <input 
+          type="text" 
+          id="owner_name" 
+          name="owner_name"
+          [(ngModel)]="storeData.owner_name" 
+          required
+          placeholder="Juan Pérez"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="ruc">RUC *</label>
+        <input 
+          type="text" 
+          id="ruc" 
+          name="ruc"
+          [(ngModel)]="storeData.ruc" 
+          required
+          placeholder="Ej: 12345678901"
+          maxlength="11"
+        >
+        <small class="help-text">Ingresa tu RUC de 11 dígitos</small>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Teléfono</label>
+        <input 
+          type="tel" 
+          id="phone" 
+          name="phone"
+          [(ngModel)]="storeData.phone" 
+          placeholder="Ej: +51 999 999 999"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea 
+          id="description" 
+          name="description"
+          [(ngModel)]="storeData.description" 
+          rows="4"
+          placeholder="Describe tu tienda y los productos que vendes..."
+        ></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" (click)="onCancel()" class="btn-cancel">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="isLoading">
+          <span *ngIf="!isLoading">Crear Tienda</span>
+          <span *ngIf="isLoading">Creando...</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- Chat guiado para crear tienda -->
+    <div *ngIf="useChatMode" class="chat-mode">
+      <app-store-assistant></app-store-assistant>
+      <div class="chat-actions">
+        <button (click)="onCancel()" class="btn-cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>

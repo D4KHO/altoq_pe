@@ -1,0 +1,47 @@
+<div class="min-h-screen bg-slate-50 py-8">
+  <div class="max-w-6xl mx-auto px-4">
+    
+    <!-- Category Header -->
+    <div *ngIf="category$ | async as category" class="mb-8">
+      <div class="bg-white rounded-2xl shadow-sm p-8 text-center border border-slate-100">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-full mb-4 text-3xl">
+          {{ category.icon || '📦' }}
+        </div>
+        <h1 class="text-3xl font-bold text-slate-900 mb-2">{{ category.name }}</h1>
+        <p class="text-slate-600 max-w-2xl mx-auto">
+          {{ category.description || 'Explora nuestros productos en esta categoría.' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <ng-container *ngIf="products$ | async as products; else loading">
+        <app-product-card 
+          *ngFor="let product of products" 
+          [product]="product">
+        </app-product-card>
+
+        <!-- Empty State -->
+        <div *ngIf="products.length === 0" class="col-span-full py-12 text-center">
+          <div class="inline-block p-6 rounded-full bg-slate-100 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-slate-900 mb-1">No hay productos disponibles</h3>
+          <p class="text-slate-500">
+            Aún no hay productos en esta categoría. ¡Vuelve pronto!
+          </p>
+        </div>
+      </ng-container>
+
+      <!-- Loading Template -->
+      <ng-template #loading>
+        <div class="col-span-full flex justify-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

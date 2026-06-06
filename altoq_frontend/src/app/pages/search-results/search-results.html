@@ -1,0 +1,42 @@
+<div class="min-h-screen bg-slate-50 py-8">
+  <div class="max-w-6xl mx-auto px-4">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-slate-900 mb-2">Resultados de búsqueda</h1>
+      <p class="text-slate-600">
+        Mostrando resultados para: <span class="font-semibold text-blue-600">"{{ query$ | async }}"</span>
+      </p>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <ng-container *ngIf="products$ | async as products; else loading">
+        <app-product-card 
+          *ngFor="let product of products" 
+          [product]="product">
+        </app-product-card>
+
+        <!-- Empty State -->
+        <div *ngIf="products.length === 0" class="col-span-full py-12 text-center">
+          <div class="inline-block p-6 rounded-full bg-slate-100 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-slate-900 mb-1">No se encontraron productos</h3>
+          <p class="text-slate-500">
+            Intenta con otros términos de búsqueda o revisa la ortografía.
+          </p>
+        </div>
+      </ng-container>
+
+      <!-- Loading Template -->
+      <ng-template #loading>
+        <div class="col-span-full flex justify-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

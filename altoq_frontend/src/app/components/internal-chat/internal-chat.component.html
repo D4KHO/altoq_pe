@@ -1,0 +1,48 @@
+<div class="chat-container">
+  <div class="chat-header" *ngIf="chatInfo">
+    <div class="chat-info">
+      <h3>Chat con Vendedor</h3>
+      <p *ngIf="chatInfo.product">Producto: {{ chatInfo.product.name }}</p>
+    </div>
+    <button (click)="closeChat()" class="close-chat-btn" [disabled]="!chatInfo.is_active">
+      Cerrar Chat
+    </button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">
+    Cargando chat...
+  </div>
+
+  <div class="chat-messages" id="chatMessages" *ngIf="!isLoading">
+    <div *ngFor="let message of messages" 
+         [class]="isMyMessage(message) ? 'my-message' : 'other-message'">
+      <div class="message-bubble">
+        <p>{{ message.content }}</p>
+        <span class="message-time">{{ formatTime(message.created_at) }}</span>
+      </div>
+    </div>
+    
+    <div *ngIf="messages.length === 0" class="no-messages">
+      <p>No hay mensajes aún. ¡Inicia la conversación!</p>
+    </div>
+  </div>
+
+  <div class="chat-input-area" *ngIf="chatInfo && chatInfo.is_active">
+    <textarea 
+      [(ngModel)]="newMessage" 
+      (keyup.enter)="sendMessage()"
+      placeholder="Escribe tu mensaje..."
+      class="message-input"
+      rows="3"
+    ></textarea>
+    <button (click)="sendMessage()" 
+            class="send-btn" 
+            [disabled]="!newMessage.trim()">
+      Enviar
+    </button>
+  </div>
+
+  <div class="chat-closed" *ngIf="chatInfo && !chatInfo.is_active">
+    <p>Este chat está cerrado.</p>
+  </div>
+</div>

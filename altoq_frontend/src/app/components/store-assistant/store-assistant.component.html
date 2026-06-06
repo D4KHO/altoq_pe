@@ -1,0 +1,41 @@
+<div class="assistant-container">
+  <div class="assistant-header">
+    <h2>🏪 Asistente para Crear Tienda</h2>
+    <button (click)="resetConversation()" class="reset-btn">Reiniciar</button>
+  </div>
+
+  <div class="chat-messages">
+    <div *ngFor="let message of messages" [class]="message.sender === 'user' ? 'user-message' : 'assistant-message'">
+      <div class="message-content">
+        <span class="icon">{{ message.sender === 'user' ? '👤' : '🤖' }}</span>
+        <p>{{ message.content }}</p>
+      </div>
+    </div>
+    
+    <div *ngIf="isTyping" class="typing-indicator">
+      <span class="icon">🤖</span>
+      <span>Escribiendo...</span>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input 
+      type="text" 
+      [(ngModel)]="userInput" 
+      (keyup.enter)="handleUserInput(userInput); userInput = ''"
+      placeholder="Escribe tu respuesta aquí..."
+      class="message-input"
+      [disabled]="isCreatingStore"
+    >
+    <button (click)="handleUserInput(userInput); userInput = ''" class="send-btn" [disabled]="isCreatingStore">
+      Enviar
+    </button>
+    <button 
+      *ngIf="currentQuestion === 'confirm_creation'" 
+      (click)="createStore()" 
+      class="confirm-btn"
+      [disabled]="isCreatingStore">
+      {{ isCreatingStore ? 'Creando...' : 'Crear Tienda' }}
+    </button>
+  </div>
+</div>

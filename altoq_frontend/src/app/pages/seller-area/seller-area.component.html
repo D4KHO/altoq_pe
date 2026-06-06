@@ -1,0 +1,197 @@
+<div class="seller-area-container" [ngClass]="getThemeClass()">
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando tu tienda...</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    <p>{{ errorMessage }}</p>
+    <button (click)="loadMyStore()" class="retry-button">Reintentar</button>
+  </div>
+
+  <div *ngIf="store && !isLoading" class="store-content">
+    <!-- Toggle de vistas -->
+    <div class="view-toggle">
+      <button 
+        (click)="switchView('store')" 
+        [class.active]="currentView === 'store'"
+        class="toggle-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        Vista de Tienda
+      </button>
+      <button 
+        (click)="switchView('dashboard')" 
+        [class.active]="currentView === 'dashboard'"
+        class="toggle-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        Panel de Vendedor
+      </button>
+    </div>
+
+    <!-- Vista de Tienda (cómo la ven los clientes) -->
+    <div *ngIf="currentView === 'store'" class="store-view">
+      <!-- Header de la tienda con tema -->
+      <div class="store-header">
+        <div class="store-banner"></div>
+        <div class="store-info">
+          <h1 class="store-name">{{ store.name }}</h1>
+          <p class="store-description">{{ store.description }}</p>
+          <div class="store-meta">
+            <span *ngIf="store.email" class="meta-item">
+              <span class="icon">📧</span> {{ store.email }}
+            </span>
+            <span *ngIf="store.phone" class="meta-item">
+              <span class="icon">📞</span> {{ store.phone }}
+            </span>
+            <span *ngIf="store.ruc" class="meta-item">
+              <span class="icon">📋</span> RUC: {{ store.ruc }}
+            </span>
+            <span class="meta-item">
+              <span class="icon">📊</span> 
+              <span class="status-badge" [class.active]="store.status === 'active'" [class.pending]="store.status === 'pending'">
+                {{ store.status === 'active' ? 'Activa' : 'Pendiente' }}
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Productos de la tienda -->
+      <div class="products-section">
+        <h2 class="section-title">Productos de {{ store.name }}</h2>
+        
+        <div *ngIf="storeProducts.length === 0" class="no-products">
+          <p>Tu tienda aún no tiene productos.</p>
+        </div>
+        
+        <div class="products-grid">
+          <div *ngFor="let product of storeProducts" class="product-card">
+            <div class="product-image">
+              <img [src]="product.image || 'https://via.placeholder.com/300x200'" [alt]="product.name">
+            </div>
+            <div class="product-info">
+              <h3 class="product-name">{{ product.name }}</h3>
+              <p class="product-description">{{ product.description }}</p>
+              <div class="product-meta">
+                <span class="product-price">S/. {{ product.price }}</span>
+                <span class="product-rating">⭐ {{ product.rating }}</span>
+              </div>
+              <button class="view-product-btn">Ver Producto</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de Vendedor (herramientas de gestión) -->
+    <div *ngIf="currentView === 'dashboard'" class="dashboard-view">
+      <div class="dashboard-header">
+        <h1>Panel de Vendedor</h1>
+        <p>Gestiona tu tienda, productos y pedidos</p>
+      </div>
+
+      <!-- Botones de acción del vendedor -->
+      <div class="action-buttons">
+        <button (click)="toggleAddProductChat()" class="action-button primary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Agregar Producto
+        </button>
+        <button class="action-button secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          Ver Productos
+        </button>
+        <button class="action-button secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Ver Pedidos
+        </button>
+      </div>
+
+      <!-- Chat guiado para agregar producto -->
+      <div *ngIf="showAddProductChat" class="add-product-chat">
+        <app-conversational-assistant></app-conversational-assistant>
+        <button (click)="toggleAddProductChat()" class="close-chat-btn">Cerrar</button>
+      </div>
+
+      <!-- Estadísticas rápidas -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-info">
+            <h3>Productos</h3>
+            <p class="stat-value">{{ storeProducts.length }}</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-info">
+            <h3>Ventas</h3>
+            <p class="stat-value">0</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-info">
+            <h3>Calificación</h3>
+            <p class="stat-value">4.5</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <h3>Clientes</h3>
+            <p class="stat-value">0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información de la tienda -->
+      <div class="store-info-card">
+        <h2>Información de la Tienda</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Nombre:</span>
+            <span class="value">{{ store.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Email:</span>
+            <span class="value">{{ store.email }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Teléfono:</span>
+            <span class="value">{{ store.phone || 'No especificado' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">RUC:</span>
+            <span class="value">{{ store.ruc || 'No especificado' }}</span>
+          </div>
+          <div class="info-item full-width">
+            <span class="label">Descripción:</span>
+            <span class="value">{{ store.description || 'Sin descripción' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!store && !isLoading && !errorMessage" class="no-store">
+    <div class="no-store-content">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+      <h2>No tienes una tienda</h2>
+      <p>Conviértete en vendedor para comenzar a vender tus productos</p>
+      <a routerLink="/become-seller" class="become-seller-button">Conviértete en Vendedor</a>
+    </div>
+  </div>
+</div>

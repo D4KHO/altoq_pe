@@ -1,0 +1,42 @@
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+class AddressBase(BaseModel):
+    name: Optional[str] = None
+    street: str
+    city: str
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: str = "Peru"
+    phone: Optional[str] = None
+    is_default: bool = False
+
+class AddressCreate(AddressBase):
+    pass
+
+class AddressUpdate(BaseModel):
+    name: Optional[str] = None
+    street: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
+    phone: Optional[str] = None
+    is_default: Optional[bool] = None
+
+class AddressResponse(AddressBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class Address(AddressBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
