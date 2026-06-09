@@ -10,3 +10,4 @@ passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
 google-auth==2.31.0
 google-auth-oauthlib==1.2.0
+alembic==1.14.1

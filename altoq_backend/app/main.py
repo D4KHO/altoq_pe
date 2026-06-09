@@ -3,8 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routes import products, auth, orders, admin_auth, admin_users, admin_stores, categories, users, chat, templates, delivery, seller
 
-# Crear tablas
-Base.metadata.create_all(bind=engine)
+# Las tablas ahora se crean con Alembic (migraciones).
+# Ejecuta: python -m alembic upgrade head
+# Ya no se usa: Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="ALTOQ API",
