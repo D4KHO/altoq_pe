@@ -13,7 +13,7 @@ class Address(Base):
     city = Column(String(100), nullable=False)
     state = Column(String(100), nullable=True)
     postal_code = Column(String(20), nullable=True)
-    country = Column(String(100), default="Peru")
+    country = Column(String(100), nullable=True)
     phone = Column(String(20), nullable=True)
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)

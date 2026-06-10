@@ -12,3 +12,5 @@ class Order(Base):
     status = Column(String(20), default="pending")  # pending, completed, canceled
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    shipping_address = Column(String(255), nullable=False, default='')
+    contact_phone = Column(String(20), nullable=False, default='')

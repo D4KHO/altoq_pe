@@ -51,23 +51,30 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 Este proyecto usa **Alembic** para manejar las migraciones de base de datos (similar a `php artisan migrate` en Laravel).
 
-### Comandos disponibles
+### Comandos disponibles (Estilo Laravel)
 
-| Acción | Comando |
-| :--- | :--- |
-| **Ejecutar migraciones pendientes** | `python migrate.py` |
-| **Crear nueva migración** (detecta cambios en tus modelos) | `python migrate.py create "descripción del cambio"` |
-| **Revertir la última migración** | `python migrate.py rollback` |
-| **Ver estado actual** | `python migrate.py status` |
-| **Ver historial completo** | `python migrate.py history` |
-| **Revertir TODO** | `python migrate.py reset` |
+| Acción | Comando Laravel | Comando AltoQ |
+| :--- | :--- | :--- |
+| **Ejecutar migraciones pendientes** | `php artisan migrate` | `python migrate.py` |
+| **Crear nueva migración** | `php artisan make:migration` | `python migrate.py create "descripción"` |
+| **Revertir última migración** | `php artisan migrate:rollback` | `python migrate.py rollback` |
+| **Ver estado actual** | `php artisan migrate:status` | `python migrate.py status` |
+| **Ver historial completo** | `php artisan migrate:show` | `python migrate.py history` |
+| **Revertir TODO** | `php artisan migrate:reset` | `python migrate.py reset` |
+| **Recrear BD desde cero** | `php artisan migrate:fresh` | `python migrate.py fresh` |
 
-### Flujo de trabajo
+### Flujo de trabajo típico
 
 1. Modifica o crea un modelo en `app/models/`
 2. Importa el modelo en `app/models/__init__.py`
 3. Ejecuta: `python migrate.py create "descripcion del cambio"`
-4. Ejecuta: `python migrate.py` para aplicar los cambios a la BD
+4. Revisa el archivo generado en `alembic/versions/`
+5. Ejecuta: `python migrate.py` para aplicar los cambios a la BD
+
+### Documentación adicional
+
+- **[QUICKSTART_MIGRATIONS.md](QUICKSTART_MIGRATIONS.md)** - Guía rápida de inicio
+- **[MIGRATIONS_GUIDE.md](MIGRATIONS_GUIDE.md)** - Documentación completa del sistema
 
 ## Endpoints
 

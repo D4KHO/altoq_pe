@@ -6,8 +6,12 @@ Uso:
     python migrate.py                    -> Ejecuta todas las migraciones pendientes (alembic upgrade head)
     python migrate.py create "mensaje"   -> Crea una nueva migracion automatica (alembic revision --autogenerate)
     python migrate.py rollback           -> Revierte la ultima migracion (alembic downgrade -1)
+    python migrate.py rollback N         -> Revierte las ultimas N migraciones
     python migrate.py status             -> Muestra el estado actual de las migraciones (alembic current)
     python migrate.py history            -> Muestra el historial de migraciones (alembic history)
+    python migrate.py reset              -> Revierte TODAS las migraciones (base)
+    python migrate.py fresh              -> Elimina la BD y la recrea desde cero (PELIGROSO)
+    python migrate.py help               -> Muestra esta ayuda
 """
 
 import sys
@@ -34,6 +38,25 @@ def get_venv_python():
     return sys.executable
 
 
+def check_env_file():
+    """Verifica que existe el archivo .env, si no, crea uno desde .env.example."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    env_file = os.path.join(base_dir, ".env")
+    env_example = os.path.join(base_dir, ".env.example")
+    
+    if not os.path.exists(env_file):
+        if os.path.exists(env_example):
+            print("[WARNING] No se encontró archivo .env")
+            print("[INFO] Creando .env desde .env.example...")
+            import shutil
+            shutil.copy(env_example, env_file)
+            print("[INFO] Archivo .env creado. Por favor edita las credenciales de la BD.")
+        else:
+            print("[ERROR] No se encontró .env ni .env.example")
+            print("[INFO] Por favor crea un archivo .env con la configuración de la BD")
+            sys.exit(1)
+
+
 def run_alembic(args: list[str]):
     """Ejecuta un comando de alembic usando el Python del venv."""
     python_exe = get_venv_python()
@@ -45,6 +68,9 @@ def run_alembic(args: list[str]):
 
 
 def main():
+    # Verificar archivo .env antes de ejecutar cualquier comando
+    check_env_file()
+    
     if len(sys.argv) < 2:
         # Sin argumentos -> ejecutar migraciones (equivalente a 'php artisan migrate')
         print("[MIGRATE] Ejecutando migraciones pendientes...")
@@ -82,6 +108,18 @@ def main():
     elif command in ("reset",):
         print("[RESET] Revirtiendo TODAS las migraciones (base)...")
         run_alembic(["downgrade", "base"])
+
+    elif command in ("fresh",):
+        print("[FRESH] ⚠️  ADVERTENCIA: Esto eliminará TODA la base de datos y la recreará desde cero.")
+        confirm = input("¿Estás seguro? (escribe 'yes' para confirmar): ")
+        if confirm.lower() == 'yes':
+            print("[FRESH] Revirtiendo todas las migraciones...")
+            run_alembic(["downgrade", "base"])
+            print("[FRESH] Ejecutando todas las migraciones...")
+            run_alembic(["upgrade", "head"])
+        else:
+            print("[FRESH] Operación cancelada.")
+            sys.exit(0)
 
     elif command in ("help", "-h", "--help"):
         print(__doc__)
