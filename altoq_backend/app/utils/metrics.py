@@ -130,10 +130,14 @@ def calculate_dashboard_summary(db: Session, store_id: int) -> dict:
     """
     Calcula el resumen del dashboard para una tienda.
     """
+    print(f"DEBUG: Calculando dashboard para store_id: {store_id}")
+    
     # Métricas totales (históricas)
     total_metrics = db.query(StoreMetric).filter(
         StoreMetric.store_id == store_id
     ).all()
+    
+    print(f"DEBUG: Total metrics encontrados: {len(total_metrics)}")
     
     total_visits = sum(m.visits for m in total_metrics)
     total_orders_delivered = sum(m.orders_delivered for m in total_metrics)
@@ -144,6 +148,8 @@ def calculate_dashboard_summary(db: Session, store_id: int) -> dict:
     total_products = db.query(Product).filter(
         Product.store_id == store_id
     ).count()
+    
+    print(f"DEBUG: Total productos: {total_products}")
     
     # Rating promedio actual
     products = db.query(Product).filter(Product.store_id == store_id).all()
@@ -196,7 +202,7 @@ def calculate_dashboard_summary(db: Session, store_id: int) -> dict:
     if last_week_revenue > 0:
         weekly_growth = ((this_week_revenue - last_week_revenue) / last_week_revenue) * 100
     
-    return {
+    result = {
         "store_id": store_id,
         "total_visits": total_visits,
         "total_products": total_products,
@@ -209,6 +215,9 @@ def calculate_dashboard_summary(db: Session, store_id: int) -> dict:
         "today_revenue": today_revenue,
         "weekly_growth": weekly_growth
     }
+    
+    print(f"DEBUG: Resultado dashboard: {result}")
+    return result
 
 def get_metrics_by_period(db: Session, store_id: int, period: str, days: int = 30) -> list:
     """

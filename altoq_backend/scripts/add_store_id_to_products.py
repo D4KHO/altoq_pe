@@ -1,5 +1,11 @@
-from app.database import engine
+import os
+import sys
 from sqlalchemy import text
+
+# Add parent directory to path to import app modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.database import engine
 
 def add_store_id_column():
     """Agrega la columna store_id a la tabla products"""

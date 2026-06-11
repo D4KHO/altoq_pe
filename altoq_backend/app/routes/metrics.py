@@ -27,20 +27,24 @@ def get_dashboard(
     """
     Obtiene el resumen del dashboard para la tienda del usuario actual.
     """
-    # Buscar usuario por email
-    user = db.query(User).filter(User.email == current_user_email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
-    # Verificar que el usuario tenga una tienda
-    store = db.query(Store).filter(Store.user_id == user.id).first()
-    if not store:
-        raise HTTPException(status_code=404, detail="El usuario no tiene una tienda")
-    
-    # Calcular resumen del dashboard
-    summary = calculate_dashboard_summary(db, store.id)
-    
-    return DashboardSummary(**summary)
+    try:
+        # Buscar usuario por email
+        user = db.query(User).filter(User.email == current_user_email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        # Verificar que el usuario tenga una tienda
+        store = db.query(Store).filter(Store.user_id == user.id).first()
+        if not store:
+            raise HTTPException(status_code=404, detail="El usuario no tiene una tienda")
+        
+        # Calcular resumen del dashboard
+        summary = calculate_dashboard_summary(db, store.id)
+        
+        return DashboardSummary(**summary)
+    except Exception as e:
+        print(f"Error en dashboard: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 @router.get("/", response_model=List[StoreMetricResponse])
 def get_metrics(

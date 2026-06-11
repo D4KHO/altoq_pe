@@ -1,40 +1,40 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Numeric, Date
-from sqlalchemy.orm import relationship
-from datetime import datetime, date
+from __future__ import annotations
+
+from datetime import date, datetime
+from typing import Optional
+
+from sqlalchemy import Date, DateTime, Float, Integer, Numeric, ForeignKey, Index
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from decimal import Decimal
+
 from ..database import Base
+
 
 class StoreMetric(Base):
     __tablename__ = "store_metrics"
 
-    id = Column(Integer, primary_key=True, index=True)
-    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)
-    date = Column(Date, nullable=False, index=True)  # Fecha del registro (un documento por día por tienda)
-    
-    # Métricas de visitas
-    visits = Column(Integer, default=0)  # Número de visitas a la tienda ese día
-    
-    # Métricas de productos
-    products_published = Column(Integer, default=0)  # Productos activos en el catálogo en esa fecha
-    
-    # Métricas de pedidos
-    orders_delivered = Column(Integer, default=0)  # Pedidos con código de entrega validado ese día
-    revenue = Column(Numeric(precision=10, scale=2), default=0.0)  # Monto total generado ese día en S/
-    
-    # Métricas de chat
-    chat_sessions = Column(Integer, default=0)  # Chats de pedidos iniciados ese día en la tienda
-    
-    # Métricas de uso
-    template_usage = Column(Integer, default=0)  # Veces que se usó el flujo de templates para publicar productos ese día
-    new_users = Column(Integer, default=0)  # Compradores nuevos que interactuaron con la tienda ese día
-    
-    # Métricas de calidad
-    avg_rating = Column(Float, default=0.0)  # Promedio de calificaciones de todas las reseñas acumuladas hasta esa fecha
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    __table_args__ = (
+        Index("ix_store_metrics_id", "id"),
+        Index("ix_store_metrics_store_id", "store_id"),
+        Index("ix_store_metrics_date", "date"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    store_id: Mapped[int] = mapped_column(
+        ForeignKey("stores.id", name="store_metrics_ibfk_1"),
+        nullable=False,
+    )
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    visits: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    products_published: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    orders_delivered: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    revenue: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    chat_sessions: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    template_usage: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    new_users: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    avg_rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships
-    store = relationship("Store", backref="metrics")
-
-    def __repr__(self):
-        return f"<StoreMetric(store_id={self.store_id}, date={self.date}, visits={self.visits})>"
+    store: Mapped["Store"] = relationship("Store", back_populates="metrics")

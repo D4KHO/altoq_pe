@@ -10,7 +10,19 @@ from .routes import products, auth, orders, admin_auth, admin_users, admin_store
 app = FastAPI(
     title="ALTOQ API",
     version="1.0.0",
-    redirect_slashes=False  # Disable automatic trailing slash redirects to prevent CORS issues
+    redirect_slashes=False,  # Disable automatic trailing slash redirects to prevent CORS issues
+    swagger_ui_init_oauth={
+        "clientId": "altoq-client",
+        "appName": "ALTOQ API",
+        "usePkceWithAuthorizationCodeGrant": False,
+    },
+    openapi_security=[
+        {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    ]
 )
 
 # Configurar CORS para Angular - DEBE IR ANTES de incluir routers

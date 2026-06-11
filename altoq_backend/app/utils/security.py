@@ -4,7 +4,8 @@ from jose import JWTError, jwt
 from typing import Optional
 import os
 from dotenv import load_dotenv
-from fastapi import Query, Header
+from fastapi import Query, Header, HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer
 
 load_dotenv()
 
@@ -12,6 +13,9 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+# OAuth2 scheme for Swagger UI
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
@@ -42,19 +46,13 @@ def verify_token(token: str) -> Optional[dict]:
     except JWTError:
         return None
 
-def get_current_user(token: str = Query(None), authorization: str = Header(None)):
+def get_current_user(token: str = Depends(oauth2_scheme)):
     """
     Dependency to get current user from JWT token.
     Use with: user_email = Depends(get_current_user)
     Returns email from token payload.
-    Token can be provided as query parameter or Authorization header.
+    Token is automatically extracted from Authorization header by OAuth2 scheme.
     """
-    from fastapi import HTTPException, status
-    
-    # Try to get token from Authorization header first
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-    
     print(f"DEBUG: Token received: {token}")
     
     if token is None:

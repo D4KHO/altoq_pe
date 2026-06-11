@@ -11,12 +11,10 @@ from alembic import context
 # para que pueda importar los módulos de la app
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# Alembic Config object
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Configurar logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
@@ -26,31 +24,37 @@ if config.config_file_name is not None:
 from app.config import settings
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
-# ---- IMPORTAR TODOS LOS MODELOS ----
-# Importamos Base y todos los modelos para que Alembic pueda
-# detectar las tablas y generar migraciones automáticamente
-from app.database import Base
-from app.models import (
-    User, Store, Product, Category, Order,
-    Address, Admin, Chat, Message,
-    ProductTemplate, TemplateField, DeliveryCode
+# ---- IMPORTAR BASE Y TODOS LOS MODELOS ----
+# Importamos Base (DeclarativeBase) y todos los modelos para que Alembic
+# pueda detectar las tablas y generar migraciones automáticamente.
+# El orden de importación es importante para resolver las FK correctamente.
+from app.database import Base  # noqa: F401
+from app.models import (  # noqa: F401
+    Admin,
+    User,
+    Category,
+    Store,
+    Address,
+    Product,
+    Order,
+    Chat,
+    Message,
+    DeliveryCode,
+    ProductTemplate,
+    TemplateField,
+    StoreMetric,
 )
 
-# Esto es lo que Alembic usa para comparar los modelos con la BD
+# target_metadata es lo que Alembic usa para comparar modelos con la BD
+# y generar migraciones automáticas con --autogenerate
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
+    Configura el contexto solo con la URL, sin crear un Engine real.
+    Útil para generar SQL sin conectarse a la BD.
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -58,6 +62,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -67,9 +73,8 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
+    Crea un Engine real y asocia la conexión con el contexto.
+    Es el modo estándar para ejecutar migraciones.
     """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
@@ -79,7 +84,10 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():

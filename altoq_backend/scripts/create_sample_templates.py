@@ -1,7 +1,13 @@
+import os
+import sys
+from sqlalchemy.orm import Session
+
+# Add parent directory to path to import app modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app.database import SessionLocal
 from app.models.category import Category
 from app.models.template import ProductTemplate, TemplateField
-from sqlalchemy.orm import Session
 
 def get_keywords_for_category(slug: str) -> str:
     """Retorna las palabras clave para una categoría específica"""
