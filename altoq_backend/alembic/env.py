@@ -22,6 +22,32 @@ if config.config_file_name is not None:
 # Leer la URL de la base de datos desde el archivo .env
 # (usando la misma configuración que FastAPI)
 from app.config import settings
+
+# ---- AUTO-CREACIÓN DE LA BASE DE DATOS SI NO EXISTE ----
+def create_database_if_not_exists(database_url: str):
+    if "sqlite" in database_url:
+        return
+        
+    from sqlalchemy import create_engine, text
+    rfind_slash = database_url.rfind("/")
+    if rfind_slash != -1:
+        server_url = database_url[:rfind_slash]
+        db_name = database_url[rfind_slash+1:]
+        if "?" in db_name:
+            db_name = db_name.split("?")[0]
+            
+        try:
+            # Conectarse al servidor sin seleccionar base de datos
+            temp_engine = create_engine(server_url)
+            with temp_engine.connect() as conn:
+                conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"))
+            temp_engine.dispose()
+        except Exception as e:
+            import sys
+            sys.stderr.write(f"[Alembic] Advertencia: No se pudo auto-crear la base de datos '{db_name}': {e}\n")
+
+create_database_if_not_exists(settings.database_url)
+
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # ---- IMPORTAR BASE Y TODOS LOS MODELOS ----
