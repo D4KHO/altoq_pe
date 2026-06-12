@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models.user import User, UserRole
+from ..models.user import User
 from ..models.store import Store
-from ..schemas.user import UserUpdate
+from ..schemas.user import UserUpdate, UserRole
 from ..schemas.store import StoreCreate, StoreResponse
 from ..dependencies import get_current_user
 
