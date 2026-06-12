@@ -66,4 +66,14 @@ export class SellerService {
       params: params
     });
   }
+
+  chatWithAiStoreAssistant(messages: { sender: string; content: string }[]): Observable<any> {
+    const headers = this.getHeaders();
+    const params = this.getParams();
+
+    return this.http.post(`${this.apiUrl}/ai-store-assistant/chat`, { messages }, {
+      headers: headers,
+      params: params
+    });
+  }
 }
