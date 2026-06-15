@@ -50,7 +50,7 @@ export class BecomeSellerComponent {
         // Update user role to BOTH since backend updates it
         const currentUser = this.authService.userValue;
         if (currentUser) {
-          const updatedUser = { ...currentUser, role: 'BOTH' as const };
+          const updatedUser = { ...currentUser, role: 'BOTH' as const, has_store: true };
           this.authService.updateUser(updatedUser);
         }
         

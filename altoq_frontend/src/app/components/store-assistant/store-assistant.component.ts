@@ -71,6 +71,8 @@ export class StoreAssistantComponent implements OnInit {
           this.storeCreated = true;
           this.isCreatingStore = false;
           this.currentQuestion = 'completed';
+          // Refresh user profile so has_store and role are updated in the navbar
+          this.authService.refreshCurrentUser().subscribe();
           setTimeout(() => {
             this.router.navigate(['/seller-area']);
           }, 3000);
@@ -100,6 +102,8 @@ export class StoreAssistantComponent implements OnInit {
           if (response.store_created) {
             this.storeCreated = true;
             this.currentQuestion = 'completed';
+            // Refresh user profile so has_store and role are updated in the navbar
+            this.authService.refreshCurrentUser().subscribe();
             setTimeout(() => {
               this.router.navigate(['/seller-area']);
             }, 3000);

@@ -40,7 +40,7 @@ export class NavbarComponent implements OnInit {
     this.hasStore$ = this.authService.user$.pipe(
       map(user => {
         if (!user) return false;
-        return user.role === 'SELLER' || user.role === 'BOTH';
+        return !!user.has_store || user.role === 'SELLER' || user.role === 'BOTH';
       })
     );
   }

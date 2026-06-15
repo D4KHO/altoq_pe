@@ -42,6 +42,7 @@ class UserLogin(BaseModel):
 class User(UserBase):
     id: int
     created_at: Optional[datetime] = None
+    has_store: bool = False
 
     class Config:
         from_attributes = True
