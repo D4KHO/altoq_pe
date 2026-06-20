@@ -1,140 +1,88 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SellerService } from '../../services/seller.service';
-import { ProductService } from '../../services/product.service';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { StoreService, PublicStore } from '../../services/store.service';
+import { CartService } from '../../services/cart';
+import { ProductCard } from '../../components/product-card/product-card';
 
 @Component({
   selector: 'app-store-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, RouterLink, ProductCard],
   templateUrl: './store-page.component.html',
   styleUrls: ['./store-page.component.css']
 })
 export class StorePageComponent implements OnInit {
-  store: any = null;
+  store: PublicStore | null = null;
   storeProducts: any[] = [];
-  isLoading = false;
+  isLoading = true;
   errorMessage = '';
-  storeTheme: string = 'default';
-  editingProduct: any = null;
-  showEditModal: boolean = false;
-  editFormData: any = {};
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private sellerService: SellerService,
-    private productService: ProductService
+    private storeService: StoreService,
+    private cartService: CartService
   ) {}
 
   ngOnInit(): void {
     const storeId = this.route.snapshot.paramMap.get('id');
     if (storeId) {
-      this.loadStore(parseInt(storeId));
+      this.loadStore(parseInt(storeId, 10));
     } else {
-      this.loadMyStore();
+      this.errorMessage = 'No se especificó una tienda.';
+      this.isLoading = false;
     }
   }
 
   loadStore(storeId: number): void {
     this.isLoading = true;
-    // Aquí necesitarías un endpoint para obtener una tienda por ID
-    // Por ahora, usamos getMyStore como fallback
-    this.loadMyStore();
-  }
-
-  loadMyStore(): void {
-    this.isLoading = true;
     this.errorMessage = '';
 
-    this.sellerService.getMyStore().subscribe({
-      next: (response) => {
-        this.store = response;
-        this.determineTheme();
-        this.loadStoreProducts();
-        this.isLoading = false;
+    this.storeService.getPublicStore(storeId).subscribe({
+      next: (store) => {
+        this.store = store;
+        this.loadStoreProducts(storeId);
       },
-      error: (error) => {
-        this.errorMessage = error.error?.detail || 'Error al cargar la tienda';
+      error: () => {
+        this.errorMessage = 'No se encontró la tienda o no está disponible.';
         this.isLoading = false;
       }
     });
   }
 
-  determineTheme(): void {
-    if (this.store && this.store.theme) {
-      this.storeTheme = this.store.theme;
-    } else {
-      this.storeTheme = 'default';
-    }
-  }
-
-  loadStoreProducts(): void {
-    this.productService.getProducts().subscribe({
+  loadStoreProducts(storeId: number): void {
+    this.storeService.getStoreProducts(storeId).subscribe({
       next: (products) => {
-        console.log('All products:', products);
-        console.log('Store ID:', this.store?.id);
-        console.log('Store:', this.store);
-
-        // Filtrar productos por store_id (manejar string vs number)
-        this.storeProducts = products.filter(p => {
-          const productStoreId = p.store_id;
-          const currentStoreId = this.store?.id;
-          console.log(`Comparing product store_id (${productStoreId} type: ${typeof productStoreId}) with store id (${currentStoreId} type: ${typeof currentStoreId})`);
-          // Comparar como números para evitar problemas de tipo
-          return Number(productStoreId) === Number(currentStoreId);
-        });
-
-        console.log('Filtered products:', this.storeProducts);
+        this.storeProducts = products;
+        this.isLoading = false;
       },
-      error: (error) => {
-        console.error('Error loading products:', error);
+      error: () => {
+        this.storeProducts = [];
+        this.isLoading = false;
       }
     });
   }
 
-  getThemeClass(): string {
-    return `theme-${this.storeTheme}`;
-  }
-
-  openEditModal(product: any): void {
-    this.editingProduct = product;
-    this.editFormData = {
-      name: product.name,
-      description: product.description,
+  onAddToCart(product: any): void {
+    this.cartService.addToCart({
+      productId: product.id,
+      quantity: 1,
       price: product.price,
-      image: product.image || ''
-    };
-    this.showEditModal = true;
-  }
-
-  closeEditModal(): void {
-    this.showEditModal = false;
-    this.editingProduct = null;
-    this.editFormData = {};
-  }
-
-  saveProduct(): void {
-    if (!this.editingProduct) return;
-
-    const updatedProduct = {
-      ...this.editingProduct,
-      name: this.editFormData.name,
-      description: this.editFormData.description,
-      price: Number(this.editFormData.price),
-      image: this.editFormData.image
-    };
-
-    this.productService.updateProduct(this.editingProduct.id, updatedProduct).subscribe({
-      next: (response) => {
-        this.closeEditModal();
-        this.loadStoreProducts();
-      },
-      error: (error) => {
-        console.error('Error updating product:', error);
-      }
+      name: product.name,
+      image: product.image
     });
+  }
+
+  getThemeGradient(): string {
+    const gradients: Record<string, string> = {
+      bakery: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+      fashion: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      home: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+      food: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      tech: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      default: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    };
+    return gradients[this.store?.theme ?? 'default'] ?? gradients['default'];
   }
 }

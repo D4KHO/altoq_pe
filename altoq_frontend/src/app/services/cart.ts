@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { Cart, CartItem } from '../models/cart';
 import { AuthService } from './auth.service';
 import { ToastService } from './toast.service';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -11,12 +12,30 @@ export class CartService {
   private cart = new BehaviorSubject<Cart>({ items: [], totalPrice: 0 });
   public cart$ = this.cart.asObservable();
 
+  private cartModalState = new BehaviorSubject<{show: boolean, item: CartItem | null}>({show: false, item: null});
+  public cartModalState$ = this.cartModalState.asObservable();
+
   constructor(
     private authService: AuthService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private router: Router
   ) {
-    this.authService.user$.subscribe(() => {
+    this.authService.user$.subscribe((user) => {
       this.loadCartFromStorage();
+      if (user) {
+        const pendingItemStr = localStorage.getItem('pending_cart_item');
+        if (pendingItemStr) {
+          try {
+            const pendingItem = JSON.parse(pendingItemStr);
+            localStorage.removeItem('pending_cart_item');
+            setTimeout(() => {
+              this.addToCart(pendingItem);
+            }, 100);
+          } catch (e) {
+            console.error('Error parsing pending cart item', e);
+          }
+        }
+      }
     });
   }
 
@@ -24,7 +43,19 @@ export class CartService {
     return this.cart.value;
   }
 
+  hideModal(): void {
+    this.cartModalState.next({ show: false, item: null });
+  }
+
   addToCart(item: CartItem): void {
+    if (!this.authService.isAuthenticated()) {
+      localStorage.setItem('pending_cart_item', JSON.stringify(item));
+      this.toastService.show('Inicia sesión para agregar productos al carrito', 'info');
+      const currentUrl = this.router.url;
+      this.router.navigate(['/login'], { queryParams: { returnUrl: currentUrl } });
+      return;
+    }
+
     const currentCart = this.cart.value;
     const existingItem = currentCart.items.find(i => i.productId === item.productId);
 
@@ -34,7 +65,7 @@ export class CartService {
       currentCart.items.push(item);
     }
     this.updateCart(currentCart);
-    this.toastService.show(`Se agregó ${item.name} al carrito`, 'success');
+    this.cartModalState.next({ show: true, item: item });
   }
 
   removeFromCart(productId: number): void {

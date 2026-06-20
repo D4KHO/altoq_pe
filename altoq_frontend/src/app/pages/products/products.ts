@@ -34,7 +34,8 @@ export class Products {
       productId: product.id,
       quantity: 1,
       price: product.price,
-      name: product.name
+      name: product.name,
+      image: product.image
     });
   }
 }

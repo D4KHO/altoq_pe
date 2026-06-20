@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routes import products, auth, orders, admin_auth, admin_users, admin_stores, categories, users, chat, templates, delivery, seller, metrics, ai_assistant, ai_product_assistant
+from .routes import products, auth, orders, admin_auth, admin_users, admin_stores, categories, users, chat, templates, delivery, seller, metrics, ai_assistant, ai_product_assistant, stores
 
 # Las tablas ahora se crean con Alembic (migraciones).
 # Ejecuta: python -m alembic upgrade head
@@ -52,6 +52,7 @@ app.include_router(seller.router)
 app.include_router(ai_assistant.router)
 app.include_router(ai_product_assistant.router)
 app.include_router(metrics.router)
+app.include_router(stores.router)
 
 @app.get("/")
 def root():

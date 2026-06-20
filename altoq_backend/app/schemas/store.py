@@ -32,3 +32,19 @@ class StoreResponse(BaseModel):
 
 class StoreStatusUpdate(BaseModel):
     status: str  # 'active', 'pending', or 'suspended'
+
+
+class StorePublicResponse(BaseModel):
+    """Schema de tienda para uso público (sin datos sensibles)"""
+    id: int
+    name: str
+    owner_name: Optional[str] = None
+    phone: Optional[str] = None
+    description: Optional[str] = None
+    logo: Optional[str] = None
+    ruc: Optional[str] = None
+    theme: Optional[str] = None
+    status: Optional[str] = None
+
+    class Config:
+        from_attributes = True
