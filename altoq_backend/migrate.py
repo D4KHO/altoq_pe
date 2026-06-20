@@ -5,6 +5,7 @@ Equivalente a 'php artisan migrate' de Laravel.
 Uso:
     python migrate.py                    -> Ejecuta todas las migraciones pendientes (alembic upgrade head)
     python migrate.py create "mensaje"   -> Crea una nueva migracion automatica (alembic revision --autogenerate)
+    python migrate.py create-run "msj"   -> Crea la migración y la aplica inmediatamente
     python migrate.py rollback           -> Revierte la ultima migracion (alembic downgrade -1)
     python migrate.py rollback N         -> Revierte las ultimas N migraciones
     python migrate.py status             -> Muestra el estado actual de las migraciones (alembic current)
@@ -17,6 +18,7 @@ Uso:
 import sys
 import os
 import subprocess
+from datetime import datetime
 
 
 def get_venv_python():
@@ -57,14 +59,19 @@ def check_env_file():
             sys.exit(1)
 
 
-def run_alembic(args: list[str]):
+def execute_alembic(args: list[str]) -> int:
     """Ejecuta un comando de alembic usando el Python del venv."""
     python_exe = get_venv_python()
     cmd = [python_exe, "-m", "alembic.config"] + args
     print(f"  Ejecutando: {' '.join(cmd)}")
     print("-" * 50)
     result = subprocess.run(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
-    sys.exit(result.returncode)
+    return result.returncode
+
+
+def run_alembic(args: list[str]):
+    """Ejecuta un comando de alembic usando el Python del venv y finaliza."""
+    sys.exit(execute_alembic(args))
 
 
 def main():
@@ -72,10 +79,35 @@ def main():
     check_env_file()
     
     if len(sys.argv) < 2:
-        # Sin argumentos -> ejecutar migraciones (equivalente a 'php artisan migrate')
-        print("[MIGRATE] Ejecutando migraciones pendientes...")
-        run_alembic(["upgrade", "head"])
-        return
+        print("[MIGRATE] 1. Aplicando migraciones pendientes...")
+        # Primero aplicamos las migraciones existentes para estar al día
+        upgrade_code = execute_alembic(["upgrade", "head"])
+        if upgrade_code != 0:
+            print("[ERROR] Error al aplicar migraciones pendientes.")
+            sys.exit(upgrade_code)
+            
+        print("\n[MIGRATE] 2. Buscando cambios en tus modelos...")
+        # Verificamos si hay cambios en los modelos de Python comparados con la base de datos
+        check_code = execute_alembic(["check"])
+        
+        if check_code == 0:
+            print("\n[OK] Base de datos al día. No se detectaron cambios en los modelos.")
+            sys.exit(0)
+        else:
+            print("\n[MIGRATE] 3. Cambios detectados. Creando y aplicando migración automática...")
+            # Generar nombre automático con fecha y hora
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            message = f"auto_migration_{timestamp}"
+            
+            # Crear la migración
+            create_code = execute_alembic(["revision", "--autogenerate", "-m", message])
+            if create_code != 0:
+                print("[ERROR] Error al crear la migración automática.")
+                sys.exit(create_code)
+                
+            # Aplicar la migración recién creada
+            print("\n[MIGRATE] 4. Aplicando nueva migración automática...")
+            sys.exit(execute_alembic(["upgrade", "head"]))
 
     command = sys.argv[1].lower()
 
@@ -91,6 +123,20 @@ def main():
         message = sys.argv[2]
         print(f"[CREATE] Creando nueva migracion: '{message}'...")
         run_alembic(["revision", "--autogenerate", "-m", message])
+
+    elif command in ("create-run", "create-apply", "run-new"):
+        if len(sys.argv) < 3:
+            print("[ERROR] Debes proporcionar un mensaje para la migracion.")
+            print('   Ejemplo: python migrate.py create-run "agregar campo telefono"')
+            sys.exit(1)
+        message = sys.argv[2]
+        print(f"[CREATE] Creando nueva migracion: '{message}'...")
+        ret_code = execute_alembic(["revision", "--autogenerate", "-m", message])
+        if ret_code == 0:
+            print("\n[MIGRATE] Ejecutando la migración recién creada...")
+            sys.exit(execute_alembic(["upgrade", "head"]))
+        else:
+            sys.exit(ret_code)
 
     elif command in ("rollback", "down", "downgrade"):
         steps = sys.argv[2] if len(sys.argv) > 2 else "1"
@@ -110,7 +156,7 @@ def main():
         run_alembic(["downgrade", "base"])
 
     elif command in ("fresh",):
-        print("[FRESH] ⚠️  ADVERTENCIA: Esto eliminará TODA la base de datos y la recreará desde cero.")
+        print("[FRESH] [ADVERTENCIA] Esto eliminará TODA la base de datos y la recreará desde cero.")
         confirm = input("¿Estás seguro? (escribe 'yes' para confirmar): ")
         if confirm.lower() == 'yes':
             print("[FRESH] Revirtiendo todas las migraciones...")
