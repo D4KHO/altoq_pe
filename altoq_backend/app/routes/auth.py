@@ -29,7 +29,12 @@ def google_login(token_data: dict, db: Session = Depends(get_db)):
         # If GOOGLE_CLIENT_ID is not set, we cannot verify properly, but we can decode for testing if we skip verification
         # For production, GOOGLE_CLIENT_ID is mandatory.
         
-        id_info = id_token.verify_oauth2_token(token, requests.Request(), GOOGLE_CLIENT_ID)
+        id_info = id_token.verify_oauth2_token(
+            token, 
+            requests.Request(), 
+            GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=10
+        )
 
         email = id_info['email']
         name = id_info.get('name', '')
