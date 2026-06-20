@@ -32,8 +32,23 @@ export class StoreAssistantComponent implements OnInit {
   }
 
   startConversation(): void {
-    this.addMessage('assistant', '¡Hola! Soy tu asistente para crear tu tienda en ALTOQ. ¿Cuál es el nombre de tu tienda?');
-    this.currentQuestion = 'store_name';
+    // Send an initial "hola" from the user to trigger the AI greeting
+    this.isTyping = true;
+    this.sellerService.chatWithAiStoreAssistant([
+      { sender: 'user', content: 'Hola, quiero crear mi tienda' }
+    ]).subscribe({
+      next: (response) => {
+        this.isTyping = false;
+        this.addMessage('assistant', response.reply);
+        this.currentQuestion = 'ai_chat';
+      },
+      error: (error) => {
+        this.isTyping = false;
+        console.error('Error starting AI conversation:', error);
+        this.addMessage('assistant', '¡Hola! Soy tu asistente para crear tu tienda en ALTOQ. ¿Cuál es el nombre de tu tienda?');
+        this.currentQuestion = 'ai_chat';
+      }
+    });
   }
 
   addMessage(sender: string, content: string): void {
@@ -46,97 +61,62 @@ export class StoreAssistantComponent implements OnInit {
     this.addMessage('user', input);
     this.isTyping = true;
 
-    setTimeout(() => {
-      this.processInput(input);
-      this.isTyping = false;
-    }, 500);
-  }
-
-  processInput(input: string): void {
-    console.log('Processing input:', input, 'Current question:', this.currentQuestion);
-    
-    switch (this.currentQuestion) {
-      case 'store_name':
-        this.storeData.name = input;
-        this.addMessage('assistant', '¡Qué buen nombre! ¿Qué tipo de productos vende tu tienda?');
-        this.currentQuestion = 'sells';
-        break;
-      case 'sells':
-        this.storeData.sells = input;
-        this.addMessage('assistant', 'Perfecto. ¿Cuál es tu RUC?');
-        this.currentQuestion = 'ruc';
-        break;
-      case 'ruc':
-        this.storeData.ruc = input;
-        this.addMessage('assistant', '¿Cuál es tu número de contacto?');
-        this.currentQuestion = 'contact';
-        break;
-      case 'contact':
-        this.storeData.contact = input;
-        this.addMessage('assistant', '¿Cuál es tu correo electrónico?');
-        this.currentQuestion = 'email';
-        break;
-      case 'email':
-        this.storeData.email = input;
-        this.completeConversation();
-        break;
-    }
-  }
-
-  completeConversation(): void {
-    this.addMessage('assistant', '¡Perfecto! He recopilado toda la información necesaria para crear tu tienda.');
-    
-    const summary = this.generateStoreSummary();
-    this.addMessage('assistant', `Resumen de tu tienda:\n${summary}\n\n¿Quieres crear tu tienda ahora?`);
-    this.currentQuestion = 'confirm_creation';
-  }
-
-  generateStoreSummary(): string {
-    let summary = `Nombre: ${this.storeData.name}\n`;
-    summary += `Vende: ${this.storeData.sells}\n`;
-    summary += `RUC: ${this.storeData.ruc}\n`;
-    summary += `Contacto: ${this.storeData.contact}\n`;
-    summary += `Correo: ${this.storeData.email}\n`;
-    return summary;
-  }
-
-  createStore(): void {
-    const token = this.authService.getToken();
-    console.log('Token before creating store:', token);
-    
-    if (!token) {
-      this.addMessage('assistant', 'No tienes una sesión activa. Por favor, inicia sesión primero.');
-      return;
-    }
-
-    this.isCreatingStore = true;
-    this.addMessage('assistant', 'Creando tu tienda...');
-    
-    const storeData = {
-      name: this.storeData.name,
-      description: this.storeData.sells,
-      ruc: this.storeData.ruc,
-      contact: this.storeData.contact,
-      email: this.storeData.email
-    };
-
-    this.sellerService.becomeSeller(storeData).subscribe({
+    // Send full conversation history to the AI backend
+    this.sellerService.chatWithAiStoreAssistant(this.messages).subscribe({
       next: (response) => {
-        this.isCreatingStore = false;
-        this.storeCreated = true;
-        this.addMessage('assistant', '¡Tienda creada exitosamente! Serás redirigido a tu área de vendedor en unos segundos.');
-        console.log('Store created:', response);
-        
-        setTimeout(() => {
-          this.router.navigate(['/seller-area']);
-        }, 2000);
+        this.isTyping = false;
+        this.addMessage('assistant', response.reply);
+
+        if (response.store_created) {
+          this.storeCreated = true;
+          this.isCreatingStore = false;
+          this.currentQuestion = 'completed';
+          // Refresh user profile so has_store and role are updated in the navbar
+          this.authService.refreshCurrentUser().subscribe();
+          setTimeout(() => {
+            this.router.navigate(['/seller-area']);
+          }, 3000);
+        }
       },
       error: (error) => {
-        this.isCreatingStore = false;
-        console.error('Error creating store:', error);
-        this.addMessage('assistant', 'Hubo un error al crear la tienda. Por favor, intenta nuevamente.');
+        this.isTyping = false;
+        console.error('Error communicating with AI:', error);
+        this.addMessage('assistant', 'Hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.');
       }
     });
+  }
+
+  // Keep createStore for the confirm button in the template (fallback)
+  createStore(): void {
+    if (this.messages.length > 0) {
+      this.isCreatingStore = true;
+      this.addMessage('user', 'Sí, confirmo. Crea mi tienda.');
+      this.isTyping = true;
+
+      this.sellerService.chatWithAiStoreAssistant(this.messages).subscribe({
+        next: (response) => {
+          this.isTyping = false;
+          this.isCreatingStore = false;
+          this.addMessage('assistant', response.reply);
+
+          if (response.store_created) {
+            this.storeCreated = true;
+            this.currentQuestion = 'completed';
+            // Refresh user profile so has_store and role are updated in the navbar
+            this.authService.refreshCurrentUser().subscribe();
+            setTimeout(() => {
+              this.router.navigate(['/seller-area']);
+            }, 3000);
+          }
+        },
+        error: (error) => {
+          this.isTyping = false;
+          this.isCreatingStore = false;
+          console.error('Error creating store via AI:', error);
+          this.addMessage('assistant', 'Hubo un error al crear la tienda. Por favor, intenta nuevamente.');
+        }
+      });
+    }
   }
 
   resetConversation(): void {

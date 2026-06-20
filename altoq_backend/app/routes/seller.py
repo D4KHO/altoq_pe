@@ -41,7 +41,7 @@ def become_seller(
     db.commit()
     db.refresh(new_store)
     
-    return {"message": "Tienda creada exitosamente", "store": StoreResponse.from_orm(new_store)}
+    return {"message": "Tienda creada exitosamente", "store": StoreResponse.model_validate(new_store)}
 
 @router.put("/switch-role")
 def switch_role(
@@ -85,4 +85,4 @@ def get_my_store(
     if not store:
         raise HTTPException(status_code=404, detail="El usuario no tiene una tienda")
     
-    return StoreResponse.from_orm(store)
+    return StoreResponse.model_validate(store)

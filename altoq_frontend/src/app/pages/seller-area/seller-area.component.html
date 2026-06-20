@@ -1,4 +1,12 @@
 <div class="seller-area-container" [ngClass]="getThemeClass()">
+  <!-- Notificación toast -->
+  <div *ngIf="notification.show" class="notification-toast" [class.success]="notification.type === 'success'" [class.error]="notification.type === 'error'">
+    <div class="notification-content">
+      <span class="notification-icon">{{ notification.type === 'success' ? '✓' : '✕' }}</span>
+      <span class="notification-message">{{ notification.message }}</span>
+    </div>
+  </div>
+
   <div *ngIf="isLoading" class="loading">
     <div class="spinner"></div>
     <p>Cargando tu tienda...</p>
@@ -16,19 +24,12 @@
         (click)="switchView('store')" 
         [class.active]="currentView === 'store'"
         class="toggle-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        </svg>
         Vista de Tienda
       </button>
       <button 
         (click)="switchView('dashboard')" 
         [class.active]="currentView === 'dashboard'"
         class="toggle-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
         Panel de Vendedor
       </button>
     </div>
@@ -43,16 +44,15 @@
           <p class="store-description">{{ store.description }}</p>
           <div class="store-meta">
             <span *ngIf="store.email" class="meta-item">
-              <span class="icon">📧</span> {{ store.email }}
+              {{ store.email }}
             </span>
             <span *ngIf="store.phone" class="meta-item">
-              <span class="icon">📞</span> {{ store.phone }}
+              {{ store.phone }}
             </span>
             <span *ngIf="store.ruc" class="meta-item">
-              <span class="icon">📋</span> RUC: {{ store.ruc }}
+              RUC: {{ store.ruc }}
             </span>
             <span class="meta-item">
-              <span class="icon">📊</span> 
               <span class="status-badge" [class.active]="store.status === 'active'" [class.pending]="store.status === 'pending'">
                 {{ store.status === 'active' ? 'Activa' : 'Pendiente' }}
               </span>
@@ -79,7 +79,7 @@
               <p class="product-description">{{ product.description }}</p>
               <div class="product-meta">
                 <span class="product-price">S/. {{ product.price }}</span>
-                <span class="product-rating">⭐ {{ product.rating }}</span>
+                <span class="product-rating">{{ product.rating }} ★</span>
               </div>
               <button class="view-product-btn">Ver Producto</button>
             </div>
@@ -98,56 +98,116 @@
       <!-- Botones de acción del vendedor -->
       <div class="action-buttons">
         <button (click)="toggleAddProductChat()" class="action-button primary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
           Agregar Producto
         </button>
-        <button class="action-button secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
+        <button (click)="toggleProductsView()" class="action-button secondary">
           Ver Productos
         </button>
         <button class="action-button secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
           Ver Pedidos
         </button>
       </div>
 
       <!-- Chat guiado para agregar producto -->
       <div *ngIf="showAddProductChat" class="add-product-chat">
-        <app-conversational-assistant></app-conversational-assistant>
+        <app-conversational-assistant [storeId]="store?.id" [storeName]="store?.name" (productCreatedEvent)="onProductCreated()"></app-conversational-assistant>
         <button (click)="toggleAddProductChat()" class="close-chat-btn">Cerrar</button>
+      </div>
+
+      <!-- Vista de productos con edición -->
+      <div *ngIf="showProductsView" class="products-view">
+        <div class="products-view-header">
+          <h2>Mis Productos</h2>
+          <button (click)="toggleProductsView()" class="close-view-btn">Cerrar</button>
+        </div>
+        
+        <div *ngIf="storeProducts.length === 0" class="no-products-message">
+          <p>No tienes productos aún. Usa el chat para agregar tu primer producto.</p>
+        </div>
+        
+        <div class="products-list">
+          <div *ngFor="let product of storeProducts" class="product-item">
+            <div class="product-item-info">
+              <div class="product-item-image">
+                <img [src]="product.image || 'https://via.placeholder.com/100x100'" [alt]="product.name">
+              </div>
+              <div class="product-item-details">
+                <h3>{{ product.name }}</h3>
+                <p class="product-price">S/. {{ product.price }}</p>
+                <p class="product-description">{{ product.description }}</p>
+              </div>
+            </div>
+            <div class="product-item-actions">
+              <button (click)="editProduct(product)" class="edit-btn">Editar</button>
+              <button (click)="deleteProduct(product.id)" class="delete-btn">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de edición de producto -->
+      <div *ngIf="showEditProductModal" class="modal-overlay">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Editar Producto</h3>
+            <button (click)="closeEditModal()" class="close-modal-btn">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Nombre:</label>
+              <input type="text" [(ngModel)]="editingProduct.name" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Precio:</label>
+              <input type="number" [(ngModel)]="editingProduct.price" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Descripción:</label>
+              <textarea [(ngModel)]="editingProduct.description" class="form-input" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Imagen (URL):</label>
+              <input type="text" [(ngModel)]="editingProduct.image" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Stock:</label>
+              <input type="number" [(ngModel)]="editingProduct.stock" class="form-input">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="closeEditModal()" class="cancel-btn">Cancelar</button>
+            <button (click)="saveProductChanges()" class="save-btn" [disabled]="isSavingProduct">
+              {{ isSavingProduct ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Estadísticas rápidas -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon">📦</div>
+          <div class="stat-color stat-products"></div>
           <div class="stat-info">
             <h3>Productos</h3>
             <p class="stat-value">{{ storeProducts.length }}</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">📊</div>
+          <div class="stat-color stat-sales"></div>
           <div class="stat-info">
             <h3>Ventas</h3>
             <p class="stat-value">0</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">⭐</div>
+          <div class="stat-color stat-rating"></div>
           <div class="stat-info">
             <h3>Calificación</h3>
             <p class="stat-value">4.5</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">👥</div>
+          <div class="stat-color stat-clients"></div>
           <div class="stat-info">
             <h3>Clientes</h3>
             <p class="stat-value">0</p>
@@ -157,8 +217,16 @@
 
       <!-- Información de la tienda -->
       <div class="store-info-card">
-        <h2>Información de la Tienda</h2>
-        <div class="info-grid">
+        <div class="store-info-header">
+          <h2>Información de la Tienda</h2>
+          <button (click)="toggleEditStore()" class="edit-store-btn">
+            <span *ngIf="!isEditingStore">Editar</span>
+            <span *ngIf="isEditingStore">Cancelar</span>
+          </button>
+        </div>
+        
+        <!-- Vista normal -->
+        <div *ngIf="!isEditingStore" class="info-grid">
           <div class="info-item">
             <span class="label">Nombre:</span>
             <span class="value">{{ store.name }}</span>
@@ -180,15 +248,42 @@
             <span class="value">{{ store.description || 'Sin descripción' }}</span>
           </div>
         </div>
+
+        <!-- Formulario de edición -->
+        <div *ngIf="isEditingStore" class="edit-store-form">
+          <div class="form-group">
+            <label>Nombre:</label>
+            <input type="text" [(ngModel)]="editedStore.name" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Email:</label>
+            <input type="email" [(ngModel)]="editedStore.email" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Teléfono:</label>
+            <input type="text" [(ngModel)]="editedStore.phone" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>RUC:</label>
+            <input type="text" [(ngModel)]="editedStore.ruc" class="form-input">
+          </div>
+          <div class="form-group full-width">
+            <label>Descripción:</label>
+            <textarea [(ngModel)]="editedStore.description" class="form-input" rows="4"></textarea>
+          </div>
+          <div class="form-actions">
+            <button (click)="saveStoreChanges()" class="save-btn" [disabled]="isSaving">
+              {{ isSaving ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <div *ngIf="!store && !isLoading && !errorMessage" class="no-store">
     <div class="no-store-content">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
+      <div class="no-store-icon"></div>
       <h2>No tienes una tienda</h2>
       <p>Conviértete en vendedor para comenzar a vender tus productos</p>
       <a routerLink="/become-seller" class="become-seller-button">Conviértete en Vendedor</a>

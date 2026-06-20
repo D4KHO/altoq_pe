@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from typing import Optional
 import os
 from dotenv import load_dotenv
-from fastapi import Query, Header, HTTPException, status, Depends
+from fastapi import Query, Header, HTTPException, status, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 
 load_dotenv()
@@ -12,10 +12,19 @@ load_dotenv()
 # JWT settings
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080")) # 7 days
+
+class OAuth2PasswordBearerWithQuery(OAuth2PasswordBearer):
+    async def __call__(self, request: Request) -> Optional[str]:
+        # First check the query parameters
+        token = request.query_params.get("token")
+        if token:
+            return token
+        # Fallback to header
+        return await super().__call__(request)
 
 # OAuth2 scheme for Swagger UI
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearerWithQuery(tokenUrl="/api/auth/login")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""

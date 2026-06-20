@@ -1,14 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, of } from 'rxjs';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../models/auth';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8000/api/auth';
+  private apiUrl = `${environment.apiUrl}/auth`;
+  private usersApiUrl = `${environment.apiUrl}/users`;
   private userSubject = new BehaviorSubject<User | null>(this.getUserFromStorage());
   public user$ = this.userSubject.asObservable();
 
@@ -53,6 +55,28 @@ export class AuthService {
     localStorage.removeItem('user');
     this.userSubject.next(null);
     this.router.navigate(['/login']);
+  }
+
+  updateUser(user: User): void {
+    localStorage.setItem('user', JSON.stringify(user));
+    this.userSubject.next(user);
+  }
+
+  refreshCurrentUser(): Observable<User | null> {
+    const token = this.getToken();
+    if (!token) {
+      return of(null);
+    }
+    return this.http.get<User>(`${this.usersApiUrl}/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }).pipe(
+      tap(user => {
+        localStorage.setItem('user', JSON.stringify(user));
+        this.userSubject.next(user);
+      })
+    );
   }
 
   isAuthenticated(): boolean {

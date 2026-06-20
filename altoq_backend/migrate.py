@@ -74,9 +74,45 @@ def run_alembic(args: list[str]):
     sys.exit(execute_alembic(args))
 
 
+def check_if_db_needs_init() -> bool:
+    """Verifica si la base de datos necesita ser inicializada (si no tiene la tabla 'users')."""
+    from sqlalchemy import create_engine, inspect
+    from dotenv import load_dotenv
+    
+    load_dotenv()
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        return True
+        
+    try:
+        engine = create_engine(db_url)
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        # Si la tabla 'users' no existe, la base de datos necesita inicialización
+        return "users" not in tables
+    except Exception:
+        # Si hay un error de conexión, el inicializador intentará crear la BD
+        return True
+
+
 def main():
     # Verificar archivo .env antes de ejecutar cualquier comando
     check_env_file()
+    
+    # Inicializar base de datos automáticamente si está vacía
+    if check_if_db_needs_init():
+        print("[MIGRATE] Detectada base de datos vacía o no inicializada.")
+        print("[MIGRATE] Inicializando tablas base por primera vez...")
+        
+        python_exe = get_venv_python()
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        
+        result = subprocess.run([python_exe, "initialize_db.py"], env=env, cwd=os.path.dirname(os.path.abspath(__file__)))
+        if result.returncode != 0:
+            print("[ERROR] No se pudo inicializar la base de datos automáticamente.")
+            sys.exit(result.returncode)
+        print("[MIGRATE] Inicialización completada con éxito.\n")
     
     if len(sys.argv) < 2:
         print("[MIGRATE] 1. Aplicando migraciones pendientes...")

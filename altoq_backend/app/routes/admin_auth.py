@@ -31,7 +31,7 @@ def admin_login(credentials: AdminLogin, db: Session = Depends(get_db)):
     
     return AdminToken(
         access_token=access_token,
-        admin=AdminResponse.from_orm(admin)
+        admin=AdminResponse.model_validate(admin)
     )
 
 @router.get("/me", response_model=AdminResponse)
@@ -58,4 +58,4 @@ def get_current_admin(
             detail="Admin not found"
         )
     
-    return AdminResponse.from_orm(admin)
+    return AdminResponse.model_validate(admin)

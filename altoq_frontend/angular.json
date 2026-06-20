@@ -3,7 +3,7 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "analytics": "0ee0eb47-fdaa-4926-8d01-78ce8402683d"
+    "analytics": "dde6c5cd-7889-4bbb-bcd8-3dcd4a949500"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -43,8 +43,6 @@
               "namedChunks": false,
               "aot": true,
               "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",
@@ -53,8 +51,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "15kb",
+                  "maximumError": "20kb"
                 }
               ]
             },

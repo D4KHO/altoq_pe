@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SellerService } from '../../services/seller.service';
 import { ProductService } from '../../services/product.service';
@@ -7,7 +8,7 @@ import { ProductService } from '../../services/product.service';
 @Component({
   selector: 'app-store-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './store-page.component.html',
   styleUrls: ['./store-page.component.css']
 })
@@ -17,6 +18,9 @@ export class StorePageComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   storeTheme: string = 'default';
+  editingProduct: any = null;
+  showEditModal: boolean = false;
+  editFormData: any = {};
 
   constructor(
     private route: ActivatedRoute,
@@ -83,11 +87,22 @@ export class StorePageComponent implements OnInit {
   }
 
   loadStoreProducts(): void {
-    // Aquí necesitarías un endpoint para obtener productos de una tienda específica
-    // Por ahora, cargamos todos los productos (esto se debe mejorar)
     this.productService.getProducts().subscribe({
       next: (products) => {
-        this.storeProducts = products;
+        console.log('All products:', products);
+        console.log('Store ID:', this.store?.id);
+        console.log('Store:', this.store);
+
+        // Filtrar productos por store_id (manejar string vs number)
+        this.storeProducts = products.filter(p => {
+          const productStoreId = p.store_id;
+          const currentStoreId = this.store?.id;
+          console.log(`Comparing product store_id (${productStoreId} type: ${typeof productStoreId}) with store id (${currentStoreId} type: ${typeof currentStoreId})`);
+          // Comparar como números para evitar problemas de tipo
+          return Number(productStoreId) === Number(currentStoreId);
+        });
+
+        console.log('Filtered products:', this.storeProducts);
       },
       error: (error) => {
         console.error('Error loading products:', error);
@@ -97,5 +112,44 @@ export class StorePageComponent implements OnInit {
 
   getThemeClass(): string {
     return `theme-${this.storeTheme}`;
+  }
+
+  openEditModal(product: any): void {
+    this.editingProduct = product;
+    this.editFormData = {
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      image: product.image || ''
+    };
+    this.showEditModal = true;
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.editingProduct = null;
+    this.editFormData = {};
+  }
+
+  saveProduct(): void {
+    if (!this.editingProduct) return;
+
+    const updatedProduct = {
+      ...this.editingProduct,
+      name: this.editFormData.name,
+      description: this.editFormData.description,
+      price: Number(this.editFormData.price),
+      image: this.editFormData.image
+    };
+
+    this.productService.updateProduct(this.editingProduct.id, updatedProduct).subscribe({
+      next: (response) => {
+        this.closeEditModal();
+        this.loadStoreProducts();
+      },
+      error: (error) => {
+        console.error('Error updating product:', error);
+      }
+    });
   }
 }

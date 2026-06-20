@@ -30,4 +30,8 @@ export class CategoryService {
   getCategoryBySlug(slug: string): Observable<Category> {
     return this.http.get<Category>(`${this.apiUrl}slug/${slug}`);
   }
+
+  createCategory(categoryData: any): Observable<any> {
+    return this.http.post(this.apiUrl, categoryData);
+  }
 }

@@ -62,7 +62,7 @@ def google_login(token_data: dict, db: Session = Depends(get_db)):
         
         return {
             "token": access_token,
-            "user": User.from_orm(db_user)
+            "user": User.model_validate(db_user)
         }
 
     except ValueError as e:
@@ -99,7 +99,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     
     return {
         "token": access_token,
-        "user": User.from_orm(db_user)
+        "user": User.model_validate(db_user)
     }
 
 @router.post("/login", response_model=Token)
@@ -122,5 +122,5 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     
     return {
         "token": access_token,
-        "user": User.from_orm(db_user)
+        "user": User.model_validate(db_user)
     }

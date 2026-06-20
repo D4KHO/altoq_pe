@@ -50,9 +50,63 @@
               <span class="product-price">S/. {{ product.price }}</span>
               <span class="product-rating">⭐ {{ product.rating }}</span>
             </div>
-            <button class="view-product-btn">Ver Producto</button>
+            <button class="view-product-btn" (click)="openEditModal(product)">Editar Producto</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div *ngIf="showEditModal" class="modal-overlay" (click)="closeEditModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Editar Producto</h2>
+        <button (click)="closeEditModal()" class="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="productName">Nombre del Producto</label>
+          <input
+            type="text"
+            id="productName"
+            [(ngModel)]="editFormData.name"
+            class="form-input"
+          >
+        </div>
+        <div class="form-group">
+          <label for="productDescription">Descripción</label>
+          <textarea
+            id="productDescription"
+            [(ngModel)]="editFormData.description"
+            class="form-input"
+            rows="4"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="productPrice">Precio (S/.)</label>
+          <input
+            type="number"
+            id="productPrice"
+            [(ngModel)]="editFormData.price"
+            class="form-input"
+            step="0.01"
+          >
+        </div>
+        <div class="form-group">
+          <label for="productImage">URL de Imagen</label>
+          <input
+            type="text"
+            id="productImage"
+            [(ngModel)]="editFormData.image"
+            class="form-input"
+            placeholder="https://ejemplo.com/imagen.jpg"
+          >
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="closeEditModal()" class="btn-secondary">Cancelar</button>
+        <button (click)="saveProduct()" class="btn-primary">Guardar Cambios</button>
       </div>
     </div>
   </div>

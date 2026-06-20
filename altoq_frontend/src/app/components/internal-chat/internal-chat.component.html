@@ -1,48 +1,95 @@
 <div class="chat-container">
+  <!-- Header -->
   <div class="chat-header" *ngIf="chatInfo">
-    <div class="chat-info">
-      <h3>Chat con Vendedor</h3>
-      <p *ngIf="chatInfo.product">Producto: {{ chatInfo.product.name }}</p>
+    <div class="chat-header-left">
+      <!-- Seller Avatar Circle -->
+      <div class="chat-avatar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="chat-info">
+        <h3>Chat con Vendedor</h3>
+        <!-- Product Badge -->
+        <div class="product-badge" *ngIf="chatInfo.product">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="product-badge-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+          </svg>
+          <span class="product-name" title="{{ chatInfo.product.name }}">{{ chatInfo.product.name }}</span>
+        </div>
+      </div>
     </div>
-    <button (click)="closeChat()" class="close-chat-btn" [disabled]="!chatInfo.is_active">
-      Cerrar Chat
+    <button (click)="closeChat()" class="close-chat-btn" [disabled]="!chatInfo.is_active" title="Finalizar conversación">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 10.95h13.5c1.104 0 2-.896 2-2v-6.75c0-1.104-.896-2-2-2H5.25c-1.104 0-2 .896-2 2v6.75c0 1.104.896 2 2 2Z" />
+      </svg>
+      <span>Finalizar</span>
     </button>
   </div>
 
-  <div *ngIf="isLoading" class="loading">
-    Cargando chat...
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando conversación...</p>
   </div>
 
+  <!-- Messages Area -->
   <div class="chat-messages" id="chatMessages" *ngIf="!isLoading">
     <div *ngFor="let message of messages" 
-         [class]="isMyMessage(message) ? 'my-message' : 'other-message'">
+         [class]="isMyMessage(message) ? 'message-row my-message' : 'message-row other-message'">
+      <!-- Message Bubble -->
       <div class="message-bubble">
-        <p>{{ message.content }}</p>
-        <span class="message-time">{{ formatTime(message.created_at) }}</span>
+        <div class="bubble-content">
+          <p>{{ message.content }}</p>
+        </div>
+        <div class="bubble-meta">
+          <span class="message-time">{{ formatTime(message.created_at) }}</span>
+          <!-- Checkmark SVG for my messages -->
+          <svg *ngIf="isMyMessage(message)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="message-status-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          </svg>
+        </div>
       </div>
     </div>
     
+    <!-- Empty State -->
     <div *ngIf="messages.length === 0" class="no-messages">
-      <p>No hay mensajes aún. ¡Inicia la conversación!</p>
+      <div class="no-messages-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a.75.75 0 0 1-1.074-.765 7.99 7.99 0 0 0 1.257-3.707C4.228 15.01 3 13.57 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+        </svg>
+      </div>
+      <h4>¡Inicia la conversación!</h4>
+      <p>Envía un mensaje para ponerte en contacto con el vendedor.</p>
     </div>
   </div>
 
+  <!-- Active Input Area -->
   <div class="chat-input-area" *ngIf="chatInfo && chatInfo.is_active">
-    <textarea 
-      [(ngModel)]="newMessage" 
-      (keyup.enter)="sendMessage()"
-      placeholder="Escribe tu mensaje..."
-      class="message-input"
-      rows="3"
-    ></textarea>
+    <div class="input-wrapper">
+      <textarea 
+        [(ngModel)]="newMessage" 
+        (keyup.enter)="sendMessage()"
+        placeholder="Escribe un mensaje aquí..."
+        class="message-input"
+        rows="1"
+      ></textarea>
+    </div>
     <button (click)="sendMessage()" 
             class="send-btn" 
-            [disabled]="!newMessage.trim()">
-      Enviar
+            [disabled]="!newMessage.trim()"
+            title="Enviar mensaje">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="send-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+      </svg>
     </button>
   </div>
 
+  <!-- Closed Chat Alert -->
   <div class="chat-closed" *ngIf="chatInfo && !chatInfo.is_active">
-    <p>Este chat está cerrado.</p>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="lock-icon">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 10.95h13.5c1.104 0 2-.896 2-2v-6.75c0-1.104-.896-2-2-2H5.25c-1.104 0-2 .896-2 2v6.75c0 1.104.896 2 2 2Z" />
+    </svg>
+    <p>Esta conversación ha sido finalizada y el chat está cerrado.</p>
   </div>
 </div>

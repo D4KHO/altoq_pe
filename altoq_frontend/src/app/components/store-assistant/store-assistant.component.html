@@ -1,41 +1,83 @@
 <div class="assistant-container">
+  <!-- Header -->
   <div class="assistant-header">
-    <h2>🏪 Asistente para Crear Tienda</h2>
-    <button (click)="resetConversation()" class="reset-btn">Reiniciar</button>
-  </div>
-
-  <div class="chat-messages">
-    <div *ngFor="let message of messages" [class]="message.sender === 'user' ? 'user-message' : 'assistant-message'">
-      <div class="message-content">
-        <span class="icon">{{ message.sender === 'user' ? '👤' : '🤖' }}</span>
-        <p>{{ message.content }}</p>
+    <div class="header-title-area">
+      <div class="header-avatar">💼</div>
+      <div class="header-info">
+        <h2>Asistente para Crear Tienda</h2>
+        <span class="header-status">
+          <span class="status-dot"></span> Activo
+        </span>
       </div>
     </div>
-    
-    <div *ngIf="isTyping" class="typing-indicator">
-      <span class="icon">🤖</span>
-      <span>Escribiendo...</span>
+    <button (click)="resetConversation()" class="reset-btn" title="Reiniciar conversación">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="btn-icon">
+        <path d="M4 12a8 8 0 0 1 15.15-3.55M4 12a8 8 0 0 0 15.15 3.55M4.5 9V4.5H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <span>Reiniciar</span>
+    </button>
+  </div>
+
+  <!-- Messages -->
+  <div class="chat-messages">
+    <div *ngFor="let message of messages"
+         [class]="message.sender === 'user' ? 'message-row user-message' : 'message-row assistant-message'">
+      <div class="message-content">
+        <div [class]="message.sender === 'user' ? 'avatar user-avatar' : 'avatar assistant-avatar'">
+          {{ message.sender === 'user' ? '�' : '💼' }}
+        </div>
+        <div class="message-bubble">
+          <p>{{ message.content }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div *ngIf="isTyping" class="message-row assistant-message">
+      <div class="message-content">
+        <div class="avatar assistant-avatar">💼</div>
+        <div class="message-bubble typing-bubble">
+          <div class="typing-indicator-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- Input Area -->
   <div class="input-area">
-    <input 
-      type="text" 
-      [(ngModel)]="userInput" 
-      (keyup.enter)="handleUserInput(userInput); userInput = ''"
-      placeholder="Escribe tu respuesta aquí..."
-      class="message-input"
-      [disabled]="isCreatingStore"
-    >
-    <button (click)="handleUserInput(userInput); userInput = ''" class="send-btn" [disabled]="isCreatingStore">
-      Enviar
+    <div class="input-wrapper">
+      <input 
+        type="text" 
+        [(ngModel)]="userInput" 
+        (keyup.enter)="handleUserInput(userInput); userInput = ''"
+        placeholder="Escribe tu respuesta aquí..."
+        class="message-input"
+        [disabled]="isCreatingStore"
+      >
+    </div>
+
+    <button (click)="handleUserInput(userInput); userInput = ''" 
+            class="send-btn" 
+            [disabled]="isCreatingStore"
+            title="Enviar">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="send-icon">
+        <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.9429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 L4.13399899,1.0574073 C3.34915502,0.5861152 2.40734225,0.424617983 1.77946707,0.9429026 C0.994623095,1.4141948 0.837654301,2.5074181 1.15159189,3.29290497 L3.03521743,9.73394788 C3.03521743,9.89104527 3.34915502,10.0481427 3.50612381,10.0481427 L16.6915026,10.8336295 C16.6915026,10.8336295 17.1624089,10.8336295 17.1624089,11.3049216 C17.1624089,11.7762138 16.6915026,12.4744748 16.6915026,12.4744748 Z"/>
+      </svg>
     </button>
+
     <button 
       *ngIf="currentQuestion === 'confirm_creation'" 
       (click)="createStore()" 
       class="confirm-btn"
       [disabled]="isCreatingStore">
-      {{ isCreatingStore ? 'Creando...' : 'Crear Tienda' }}
+      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="confirm-icon" *ngIf="!isCreatingStore">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+      </svg>
+      <span>{{ isCreatingStore ? 'Creando...' : 'Crear Tienda' }}</span>
     </button>
   </div>
 </div>

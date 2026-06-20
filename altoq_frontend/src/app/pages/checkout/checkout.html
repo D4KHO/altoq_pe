@@ -1,57 +1,343 @@
-<section class="mx-auto max-w-4xl px-4 py-6">
-	<h2 class="text-2xl font-semibold text-slate-900">Finalizar Compra</h2>
+<div class="checkout-page">
+  <div class="max-w-5xl mx-auto">
 
-	<div *ngIf="cart.items.length > 0; else emptyCart" class="mt-6 grid gap-6 md:grid-cols-2">
-		<!-- Formulario -->
-		<div class="rounded-lg border border-slate-200 bg-white p-6">
-			<h3 class="text-lg font-semibold text-slate-900">Datos de Envío</h3>
-			<form (ngSubmit)="onSubmit()" class="mt-4 space-y-4">
-				<div>
-					<label for="name" class="block text-sm font-medium text-slate-700">Nombre Completo</label>
-					<input [(ngModel)]="name" name="name" id="name" type="text" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" />
-				</div>
-				<div>
-					<label for="email" class="block text-sm font-medium text-slate-700">Email</label>
-					<input [(ngModel)]="email" name="email" id="email" type="email" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" />
-				</div>
-				<div>
-					<label for="address" class="block text-sm font-medium text-slate-700">Dirección</label>
-					<textarea [(ngModel)]="address" name="address" id="address" rows="3" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"></textarea>
-				</div>
-				<div>
-					<label for="phone" class="block text-sm font-medium text-slate-700">Teléfono</label>
-					<input [(ngModel)]="phone" name="phone" id="phone" type="tel" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" />
-				</div>
-				<button type="submit" [disabled]="processing" class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:bg-slate-400">
-					{{ processing ? 'Procesando...' : 'Confirmar Compra' }}
-				</button>
-			</form>
-		</div>
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-slate-900">Finalizar Compra</h1>
+      <p class="text-slate-500 mt-1 text-sm">Compra segura y protegida</p>
+    </div>
 
-		<!-- Resumen -->
-		<div>
-			<div class="rounded-lg border border-slate-200 bg-white p-6">
-				<h3 class="text-lg font-semibold text-slate-900">Resumen de la Orden</h3>
-				<div class="mt-4 space-y-3">
-					<div *ngFor="let item of cart.items" class="flex items-center justify-between text-sm">
-						<span class="text-slate-700">{{ item.name }} x{{ item.quantity }}</span>
-						<span class="font-medium text-slate-900">S/ {{ (item.price * item.quantity) | number:'1.2-2' }}</span>
-					</div>
-				</div>
-				<div class="mt-4 border-t border-slate-200 pt-4">
-					<div class="flex items-center justify-between text-lg font-bold text-slate-900">
-						<span>Total:</span>
-						<span>S/ {{ cart.totalPrice | number:'1.2-2' }}</span>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+    <!-- Step Indicator -->
+    <div class="step-indicator" *ngIf="step < 3">
+      <div class="step-dot" [class.active]="step === 1" [class.completed]="step > 1">
+        <div class="dot">{{ step > 1 ? '✓' : '1' }}</div>
+        <span class="label">Envío</span>
+      </div>
+      <div class="step-line" [class.completed]="step > 1"></div>
+      <div class="step-dot" [class.active]="step === 2" [class.completed]="step > 2">
+        <div class="dot">{{ step > 2 ? '✓' : '2' }}</div>
+        <span class="label">Pago</span>
+      </div>
+    </div>
 
-	<ng-template #emptyCart>
-		<div class="mt-12 text-center">
-			<p class="text-lg text-slate-600">Tu carrito está vacío</p>
-			<a routerLink="/" class="mt-4 inline-block rounded-md bg-slate-900 px-6 py-2 text-sm font-medium text-white hover:bg-slate-800">Ir a Comprar</a>
-		</div>
-	</ng-template>
-</section>
+    <!-- ═══════════ EMPTY CART ═══════════ -->
+    <ng-container *ngIf="cart.items.length === 0 && step < 3">
+      <div class="checkout-card max-w-lg mx-auto text-center py-16">
+        <div class="text-5xl mb-4 text-slate-300 flex justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+          </svg>
+        </div>
+        <h2 class="text-xl font-semibold text-slate-800 mb-2">Tu carrito está vacío</h2>
+        <p class="text-slate-500 mb-6">Agrega productos antes de proceder al pago.</p>
+        <a routerLink="/" class="btn-primary inline-block w-auto px-8">Ir a comprar</a>
+      </div>
+    </ng-container>
+
+    <!-- ═══════════ MAIN CHECKOUT LAYOUT ═══════════ -->
+    <div class="grid gap-6 lg:grid-cols-3" *ngIf="cart.items.length > 0 && step < 3">
+
+      <!-- LEFT COLUMN: Steps -->
+      <div class="lg:col-span-2 space-y-5">
+
+        <!-- Error Box -->
+        <div class="error-box" *ngIf="paymentError">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1 -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          {{ paymentError }}
+        </div>
+
+        <!-- ─────── STEP 1: SHIPPING ─────── -->
+        <div class="checkout-card" *ngIf="step === 1">
+          <h2 class="text-xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+            <span class="text-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </span> Datos de Envío
+          </h2>
+
+          <!-- Recipient info -->
+          <div class="mb-5">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Datos del Destinatario</h3>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="md:col-span-2">
+                <label class="form-label" for="recipientName">Nombre Completo *</label>
+                <input id="recipientName" class="form-input" type="text" [(ngModel)]="recipientName"
+                  placeholder="Nombre completo del destinatario" />
+              </div>
+              <div>
+                <label class="form-label" for="recipientEmail">Correo Electrónico *</label>
+                <input id="recipientEmail" class="form-input" type="email" [(ngModel)]="recipientEmail"
+                  placeholder="correo@ejemplo.com" />
+              </div>
+              <div>
+                <label class="form-label" for="recipientPhone">Teléfono / Celular *</label>
+                <input id="recipientPhone" class="form-input" type="tel" [(ngModel)]="recipientPhone"
+                  placeholder="+51 999 999 999" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Location info -->
+          <div class="mb-5">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Ubicación de Entrega</h3>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div>
+                <label class="form-label" for="department">Departamento *</label>
+                <input id="department" class="form-input" type="text" [(ngModel)]="department"
+                  placeholder="Ej: Lima" />
+              </div>
+              <div>
+                <label class="form-label" for="province">Provincia *</label>
+                <input id="province" class="form-input" type="text" [(ngModel)]="province"
+                  placeholder="Ej: Lima" />
+              </div>
+              <div>
+                <label class="form-label" for="district">Distrito *</label>
+                <input id="district" class="form-input" type="text" [(ngModel)]="district"
+                  placeholder="Ej: Miraflores" />
+              </div>
+              <div class="md:col-span-2">
+                <label class="form-label" for="streetAddress">Dirección (Calle / Av. / Jirón) *</label>
+                <input id="streetAddress" class="form-input" type="text" [(ngModel)]="streetAddress"
+                  placeholder="Ej: Av. Javier Prado 1234, Dpto 502" />
+              </div>
+              <div class="md:col-span-2">
+                <label class="form-label" for="reference">Referencia del Domicilio</label>
+                <input id="reference" class="form-input" type="text" [(ngModel)]="reference"
+                  placeholder="Ej: Frente al parque, edificio beige" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Owner-only policy -->
+          <div class="owner-policy mb-6">
+            <span class="icon flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </span>
+            <div>
+              <p><strong>Política de entrega:</strong> El pedido <strong>solo podrá ser entregado al titular</strong>, quien deberá presentar su <strong>DNI original</strong> al momento de la entrega. No se acepta entrega a terceros.</p>
+            </div>
+          </div>
+
+          <label class="flex items-start gap-3 cursor-pointer mb-6 p-3 rounded-xl border-2 border-transparent hover:border-indigo-100 hover:bg-indigo-50/40 transition-all" [class.border-indigo-300]="onlyOwnerAccepted" [class.bg-indigo-50]="onlyOwnerAccepted">
+            <input id="ownerCheck" type="checkbox" [(ngModel)]="onlyOwnerAccepted"
+              class="mt-0.5 w-4 h-4 rounded accent-indigo-600 flex-shrink-0" />
+            <span class="text-sm text-slate-700 leading-snug">
+              <strong>Acepto y entiendo</strong> que <strong>solo yo, como titular</strong>, puedo recibir este pedido presentando mi DNI original.
+            </span>
+          </label>
+
+          <button class="btn-primary" (click)="goToPayment()">
+            Continuar al Pago →
+          </button>
+        </div>
+
+        <!-- ─────── STEP 2: PAYMENT ─────── -->
+        <div *ngIf="step === 2">
+
+          <!-- Processing overlay -->
+          <div class="checkout-card" *ngIf="processing">
+            <div class="processing-overlay">
+              <div class="spinner-ring"></div>
+              <p class="phase-text">{{ paymentPhase }}</p>
+              <p class="text-xs text-slate-400">Por favor no cierres esta ventana...</p>
+            </div>
+          </div>
+
+          <!-- Payment form -->
+          <div class="checkout-card" *ngIf="!processing">
+            <h2 class="text-xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+              <span class="text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </span> Método de Pago
+            </h2>
+
+            <!-- 3D Credit Card Preview -->
+            <div class="card-3d-wrapper">
+              <div class="card-3d" [class.flipped]="isCardFlipped">
+                <!-- Front -->
+                <div class="card-face card-front" [class.visa]="cardType === 'visa'" [class.mastercard]="cardType === 'mastercard'" [class.amex]="cardType === 'amex'">
+                  <div class="flex justify-between items-start">
+                    <div class="card-chip"></div>
+                    <div class="card-brand">
+                      <span *ngIf="cardType === 'visa'">VISA</span>
+                      <span *ngIf="cardType === 'mastercard'" class="flex gap-[-4px]">
+                        <span style="color:#eb001b">●</span><span style="color:#f79e1b">●</span>
+                      </span>
+                      <span *ngIf="cardType === 'amex'">AMEX</span>
+                      <span *ngIf="cardType === 'generic'" style="font-size:0.9rem; opacity:0.6">●●●</span>
+                    </div>
+                  </div>
+                  <div class="card-number-display mt-2">{{ cardNumberDisplay }}</div>
+                  <div class="flex justify-between items-end">
+                    <div>
+                      <div class="card-label">Titular</div>
+                      <div class="card-value" style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ cardholderDisplay }}</div>
+                    </div>
+                    <div>
+                      <div class="card-label">Vence</div>
+                      <div class="card-value">{{ expiryDisplay }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Back -->
+                <div class="card-face card-back">
+                  <div class="magnetic-stripe"></div>
+                  <div class="cvv-strip">
+                    <span class="text-xs text-gray-500">CVV</span>
+                    <span>{{ cvv ? '•'.repeat(cvv.length) : '•••' }}</span>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-3 text-center">Esta tarjeta es simulada. No se realizará ningún cobro real.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card form -->
+            <div class="space-y-4">
+              <div>
+                <label class="form-label" for="cardholderName">Nombre del Titular</label>
+                <input id="cardholderName" class="form-input" type="text" [(ngModel)]="cardholderName"
+                  placeholder="Como aparece en la tarjeta" style="text-transform:uppercase" />
+              </div>
+              <div>
+                <label class="form-label" for="cardNumberInput">Número de Tarjeta</label>
+                <input id="cardNumberInput" class="form-input" type="text" [value]="cardNumber"
+                  (input)="formatCardNumber($event)" placeholder="0000 0000 0000 0000" maxlength="19"
+                  style="font-family: 'Courier New', monospace; letter-spacing:0.1em" />
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="form-label" for="expiryDateInput">Fecha de Vencimiento</label>
+                  <input id="expiryDateInput" class="form-input" type="text" [value]="expiryDate"
+                    (input)="formatExpiry($event)" placeholder="MM/YY" maxlength="5" />
+                </div>
+                <div>
+                  <label class="form-label" for="cvvInput">CVV</label>
+                  <input id="cvvInput" class="form-input" type="text" [(ngModel)]="cvv"
+                    (focus)="isCardFlipped = true" (blur)="isCardFlipped = false"
+                    placeholder="•••" maxlength="4" style="letter-spacing:0.2em" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Info secured badge -->
+            <div class="flex items-center gap-2 mt-4 text-xs text-slate-400">
+              <span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </span>
+              <span>Pago simulado · Tus datos están protegidos · No se realizará ningún cargo real</span>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+              <button class="btn-secondary flex-shrink-0" style="width:auto; padding: 0.85rem 1.2rem;" (click)="backToShipping()">
+                ← Volver
+              </button>
+              <button class="btn-primary flex items-center gap-2 justify-center" (click)="simulatePay()" [disabled]="processing">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Pagar S/ {{ cart.totalPrice | number:'1.2-2' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Order Summary -->
+      <div class="lg:col-span-1">
+        <div class="summary-panel">
+          <h3 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <span class="text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </span> <span>Resumen de Compra</span>
+          </h3>
+          <div class="space-y-3 mb-4">
+            <div *ngFor="let item of cart.items" class="flex items-start justify-between text-sm gap-2">
+              <span class="text-slate-700 leading-snug flex-1">
+                {{ item.name }}
+                <span class="text-slate-400 ml-1">×{{ item.quantity }}</span>
+              </span>
+              <span class="font-semibold text-slate-900 flex-shrink-0">S/ {{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="border-t border-slate-100 pt-3">
+            <div class="flex justify-between items-center text-sm text-slate-500 mb-1">
+              <span>Subtotal</span>
+              <span>S/ {{ cart.totalPrice | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between items-center text-sm text-slate-500 mb-3">
+              <span>Envío</span>
+              <span class="text-green-600 font-medium">Gratis</span>
+            </div>
+            <div class="flex justify-between items-center text-lg font-bold text-slate-900">
+              <span>Total</span>
+              <span>S/ {{ cart.totalPrice | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="mt-4 p-3 rounded-xl bg-slate-50 text-xs text-slate-500 flex items-center justify-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg> Compra 100% segura y encriptada
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════ STEP 3: SUCCESS ═══════════ -->
+    <div class="checkout-card max-w-lg mx-auto" *ngIf="step === 3">
+      <div class="success-screen">
+        <div class="success-icon flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900 mt-2">¡Compra Exitosa!</h2>
+        <p class="text-slate-600 text-sm max-w-xs mx-auto">
+          Tu pedido ha sido registrado correctamente. Te notificaremos cuando sea enviado.
+        </p>
+        <div class="bg-slate-50 rounded-xl p-4 w-full text-sm text-slate-600 mt-2">
+          <div class="flex justify-between mb-1">
+            <span>Envío a:</span>
+            <span class="font-medium text-slate-800 text-right max-w-[160px]">{{ recipientName }}</span>
+          </div>
+          <div class="flex justify-between mb-1">
+            <span>Teléfono:</span>
+            <span class="font-medium text-slate-800">{{ recipientPhone }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Total pagado:</span>
+            <span class="font-bold text-green-600">S/ {{ cart.totalPrice | number:'1.2-2' }}</span>
+          </div>
+        </div>
+        <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mt-1 flex items-start gap-1 text-left">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>Recuerda presentar tu <strong>DNI original</strong> para recibir el pedido.</span>
+        </p>
+        <button class="btn-primary mt-4 flex justify-center items-center gap-2" (click)="goHome()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Volver al Inicio
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+

@@ -6,6 +6,8 @@ export interface User {
   phone?: string;
   is_active: boolean;
   is_admin: boolean;
+  role?: 'BUYER' | 'SELLER' | 'BOTH';
+  has_store?: boolean;
 }
 
 export interface LoginCredentials {

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import Optional
 from enum import Enum
@@ -14,6 +14,13 @@ class UserBase(BaseModel):
     address: Optional[str] = None
     phone: Optional[str] = None
     role: UserRole = UserRole.BUYER
+
+    @field_validator('role', mode='before')
+    @classmethod
+    def uppercase_role(cls, v):
+        if isinstance(v, str):
+            return v.upper()
+        return v
 
 class UserCreate(UserBase):
     password: str
@@ -34,7 +41,8 @@ class UserLogin(BaseModel):
 
 class User(UserBase):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
+    has_store: bool = False
 
     class Config:
         from_attributes = True

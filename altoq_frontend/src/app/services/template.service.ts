@@ -34,6 +34,7 @@ export class TemplateService {
     Object.keys(tokenParams).forEach(key => {
       params = params.set(key, tokenParams[key]);
     });
+    console.log('Fetching templates from:', `${this.apiUrl}/`, 'with params:', params);
     return this.http.get<any[]>(`${this.apiUrl}/`, { params });
   }
 

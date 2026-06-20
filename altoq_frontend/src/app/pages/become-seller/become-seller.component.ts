@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SellerService } from '../../services/seller.service';
+import { AuthService } from '../../services/auth.service';
 import { StoreAssistantComponent } from '../../components/store-assistant/store-assistant.component';
 
 @Component({
@@ -28,7 +29,8 @@ export class BecomeSellerComponent {
 
   constructor(
     private sellerService: SellerService,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {}
 
   toggleMode(): void {
@@ -44,6 +46,14 @@ export class BecomeSellerComponent {
       next: (response) => {
         this.successMessage = '¡Tienda creada exitosamente! Ahora eres vendedor.';
         this.isLoading = false;
+        
+        // Update user role to BOTH since backend updates it
+        const currentUser = this.authService.userValue;
+        if (currentUser) {
+          const updatedUser = { ...currentUser, role: 'BOTH' as const, has_store: true };
+          this.authService.updateUser(updatedUser);
+        }
+        
         setTimeout(() => {
           this.router.navigate(['/home']);
         }, 2000);

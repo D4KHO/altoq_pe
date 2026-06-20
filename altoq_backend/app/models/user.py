@@ -33,3 +33,8 @@ class User(Base):
     chats_as_buyer: Mapped[List["Chat"]] = relationship("Chat", foreign_keys="Chat.buyer_id", back_populates="buyer")
     chats_as_seller: Mapped[List["Chat"]] = relationship("Chat", foreign_keys="Chat.seller_id", back_populates="seller")
     messages_sent: Mapped[List["Message"]] = relationship("Message", back_populates="sender")
+
+    @property
+    def has_store(self) -> bool:
+        """Returns True if the user has at least one registered store."""
+        return len(self.stores) > 0
