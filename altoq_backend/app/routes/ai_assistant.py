@@ -86,6 +86,10 @@ CREATE_STORE_TOOL = {
                         "type": "string",
                         "description": "Nombre del dueño de la tienda (opcional)",
                     },
+                    "theme": {
+                        "type": "string",
+                        "description": "Plantilla visual detectada (valores: 'default', 'bakery', 'fashion', 'home', 'food', 'tech').",
+                    },
                 },
                 "required": ["name", "email", "description"],
             },
@@ -106,9 +110,10 @@ SYSTEM_INSTRUCTION = (
     "Reglas:\n"
     "- Saluda amigablemente al inicio.\n"
     "- Haz las preguntas de forma natural, una a la vez.\n"
+    "- Basándote en la descripción de lo que vende la tienda, deduce cuál de los siguientes temas visuales se ajusta mejor: 'bakery' (postres, pasteles, dulces), 'fashion' (ropa, moda, zapatos), 'home' (hogar, muebles), 'food' (comidas, restaurantes), 'tech' (tecnología, electrodomésticos), o 'default' (si ninguno aplica).\n"
     "- Cuando tengas al menos el nombre, email y descripción, muestra un resumen "
     "  y pregunta al usuario si quiere confirmar la creación.\n"
-    "- Si el usuario confirma, llama a la función create_store con los datos recopilados.\n"
+    "- Si el usuario confirma, llama a la función create_store con los datos recopilados, incluyendo el parámetro 'theme' que hayas deducido.\n"
     "- Si el usuario quiere cambiar algo, permite la corrección antes de crear.\n"
     "- Responde siempre en español.\n"
     "- Sé conciso pero amigable. Usa emojis moderadamente.\n"
@@ -128,6 +133,7 @@ def _create_store_in_db(
     ruc: str | None = None,
     phone: str | None = None,
     owner_name: str | None = None,
+    theme: str | None = "default",
 ) -> Store:
     """Persist a new Store row linked to the authenticated user."""
     existing = db.query(Store).filter(Store.user_id == user.id).first()
@@ -141,6 +147,7 @@ def _create_store_in_db(
         ruc=ruc,
         phone=phone,
         owner_name=owner_name or user.name,
+        theme=theme or "default",
         user_id=user.id,
         status="active",
     )
@@ -255,6 +262,7 @@ def chat_with_assistant(
                             ruc=args.get("ruc"),
                             phone=args.get("phone"),
                             owner_name=args.get("owner_name"),
+                            theme=args.get("theme", "default"),
                         )
                         store_created = True
 

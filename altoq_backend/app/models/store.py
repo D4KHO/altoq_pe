@@ -33,6 +33,7 @@ class Store(Base):
         default="pending",
     )
     ruc: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    theme: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default="default")
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     # Relationships
