@@ -28,7 +28,7 @@ class AddressUpdate(BaseModel):
 class AddressResponse(AddressBase):
     id: int
     user_id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -36,7 +36,7 @@ class AddressResponse(AddressBase):
 class Address(AddressBase):
     id: int
     user_id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

@@ -12,6 +12,8 @@ class OrderBase(BaseModel):
     products: List[OrderItem]
     total_amount: float
     status: str = "pending"
+    shipping_address: str = ""
+    contact_phone: str = ""
 
 class OrderCreate(OrderBase):
     pass

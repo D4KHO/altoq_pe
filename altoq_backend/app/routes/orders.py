@@ -17,7 +17,9 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         user_id=order.user_id,
         products=products_json,
         total_amount=order.total_amount,
-        status=order.status
+        status=order.status,
+        shipping_address=order.shipping_address,
+        contact_phone=order.contact_phone
     )
     db.add(db_order)
     db.commit()

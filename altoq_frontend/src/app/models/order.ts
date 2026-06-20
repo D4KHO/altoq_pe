@@ -1,11 +1,13 @@
 export interface Order {
-  id: number;
-  userId: number;
+  id?: number;
+  user_id: number;
   products: OrderItem[];
-  totalAmount: number;
+  total_amount: number;
   status: 'pending' | 'completed' | 'canceled';
-  createdAt: Date;
-  updatedAt: Date;
+  shipping_address: string;
+  contact_phone: string;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export interface OrderItem {

@@ -1,0 +1,454 @@
+/* ── Checkout Layout ─────────────────────────────── */
+.checkout-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f4ff 0%, #fafafa 60%, #f0f9ff 100%);
+  padding: 2rem 1rem 4rem;
+}
+
+/* ── Step Indicator ──────────────────────────────── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 2.5rem;
+}
+
+.step-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.step-dot .dot {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 2.5px solid #cbd5e1;
+  background: #fff;
+  color: #94a3b8;
+  transition: all 0.3s ease;
+}
+
+.step-dot.active .dot {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border-color: #3b82f6;
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.step-dot.completed .dot {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+  color: #fff;
+}
+
+.step-dot .label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.step-dot.active .label {
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+.step-dot.completed .label {
+  color: #10b981;
+}
+
+.step-line {
+  width: 4rem;
+  height: 2.5px;
+  background: #e2e8f0;
+  margin-bottom: 1.2rem;
+  transition: background 0.3s ease;
+}
+
+.step-line.completed {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+/* ── Card container ──────────────────────────────── */
+.card-3d-wrapper {
+  perspective: 1200px;
+  width: 100%;
+  max-width: 380px;
+  height: 220px;
+  margin: 0 auto 1.5rem;
+}
+
+.card-3d {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-3d.flipped {
+  transform: rotateY(180deg);
+}
+
+/* ── Card Face (shared) ──────────────────────────── */
+.card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1.4rem 1.6rem;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.card-face::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.card-face::after {
+  content: '';
+  position: absolute;
+  bottom: -50%;
+  left: -10%;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+/* ── Card Front ──────────────────────────────────── */
+.card-front {
+  background: linear-gradient(135deg, #1a1f5e 0%, #2d3891 50%, #4f46e5 100%);
+  color: #fff;
+}
+
+.card-front.visa {
+  background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%);
+}
+
+.card-front.mastercard {
+  background: linear-gradient(135deg, #1b1b2f 0%, #2c2c54 40%, #eb5757 100%);
+}
+
+.card-front.amex {
+  background: linear-gradient(135deg, #006fcf 0%, #0077cc 50%, #00aaff 100%);
+}
+
+/* ── Card Back ───────────────────────────────────── */
+.card-back {
+  background: linear-gradient(135deg, #2d3748, #1a202c);
+  color: #fff;
+  transform: rotateY(180deg);
+}
+
+.card-back .magnetic-stripe {
+  height: 48px;
+  background: #1a1a1a;
+  margin: 0 -1.6rem;
+  margin-top: 0.4rem;
+}
+
+.card-back .cvv-strip {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.card-back .cvv-strip span {
+  font-family: monospace;
+  font-size: 1.1rem;
+  color: #1a202c;
+  letter-spacing: 0.2em;
+}
+
+.card-chip {
+  width: 44px;
+  height: 34px;
+  background: linear-gradient(135deg, #d4a843, #f0c660, #c4973b);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-chip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 8px,
+    rgba(0,0,0,0.1) 8px,
+    rgba(0,0,0,0.1) 9px
+  ),
+  repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 8px,
+    rgba(0,0,0,0.1) 8px,
+    rgba(0,0,0,0.1) 9px
+  );
+}
+
+.card-number-display {
+  font-family: 'Courier New', monospace;
+  font-size: 1.15rem;
+  letter-spacing: 0.18em;
+  font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.card-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  opacity: 0.65;
+  margin-bottom: 2px;
+}
+
+.card-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Card brand logo area */
+.card-brand {
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  opacity: 0.9;
+}
+
+/* ── Form styles ─────────────────────────────────── */
+.checkout-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0,0,0,0.04);
+  border: 1px solid #e8ecf4;
+  padding: 2rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background: #fafbff;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  background: #fff;
+}
+
+/* ── Policy warning box ──────────────────────────── */
+.owner-policy {
+  background: linear-gradient(135deg, #fef3c7, #fffbeb);
+  border: 1.5px solid #fcd34d;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.owner-policy .icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.owner-policy p {
+  font-size: 0.82rem;
+  color: #92400e;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.owner-policy strong {
+  color: #78350f;
+}
+
+/* ── Primary button ──────────────────────────────── */
+.btn-primary {
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #e8ecf3;
+  border-color: #cbd5e1;
+}
+
+/* ── Payment processing overlay ─────────────────── */
+.processing-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  gap: 1.5rem;
+}
+
+.spinner-ring {
+  width: 64px;
+  height: 64px;
+  border: 5px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.phase-text {
+  font-size: 1.05rem;
+  color: #475569;
+  font-weight: 500;
+  min-height: 1.5rem;
+  transition: opacity 0.3s ease;
+}
+
+/* ── Success screen ──────────────────────────────── */
+.success-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3.5rem 2rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.35);
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Summary panel ───────────────────────────────── */
+.summary-panel {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #e8ecf4;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  padding: 1.5rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+/* ── Error box ───────────────────────────────────── */
+.error-box {
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .card-3d-wrapper {
+    height: 195px;
+  }
+
+  .card-number-display {
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+  }
+}

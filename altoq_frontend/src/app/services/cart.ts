@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Cart, CartItem } from '../models/cart';
 import { AuthService } from './auth.service';
+import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root',
@@ -10,7 +11,10 @@ export class CartService {
   private cart = new BehaviorSubject<Cart>({ items: [], totalPrice: 0 });
   public cart$ = this.cart.asObservable();
 
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private toastService: ToastService
+  ) {
     this.authService.user$.subscribe(() => {
       this.loadCartFromStorage();
     });
@@ -30,6 +34,7 @@ export class CartService {
       currentCart.items.push(item);
     }
     this.updateCart(currentCart);
+    this.toastService.show(`Se agregó ${item.name} al carrito`, 'success');
   }
 
   removeFromCart(productId: number): void {
