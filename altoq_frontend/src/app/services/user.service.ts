@@ -4,12 +4,13 @@ import { Observable } from 'rxjs';
 import { User } from '../models/auth';
 import { Address, AddressCreate, AddressUpdate, UserUpdate, PasswordChange } from '../models/user-profile';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = 'http://localhost:8000/api/users';
+  private apiUrl = `${environment.apiUrl}/users`;
 
   constructor(
     private http: HttpClient,

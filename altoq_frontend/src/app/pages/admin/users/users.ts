@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AdminAuthService } from '../../../services/admin-auth';
+import { environment } from '../../../../environments/environment';
 
 interface User {
   id: number;
@@ -33,7 +34,7 @@ export class Users implements OnInit {
     const token = this.authService.getToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    this.http.get<User[]>('http://localhost:8000/api/admin/users/', { headers }).subscribe({
+    this.http.get<User[]>(`${environment.apiUrl}/admin/users/`, { headers }).subscribe({
       next: (users) => {
         this.users = users;
         this.isLoading = false;
@@ -53,7 +54,7 @@ export class Users implements OnInit {
     const token = this.authService.getToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    this.http.delete(`http://localhost:8000/api/admin/users/${userId}`, { headers }).subscribe({
+    this.http.delete(`${environment.apiUrl}/admin/users/${userId}`, { headers }).subscribe({
       next: () => {
         this.users = this.users.filter(u => u.id !== userId);
       },

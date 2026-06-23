@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AdminAuthService } from '../../../services/admin-auth';
+import { environment } from '../../../../environments/environment';
 
 interface Store {
   id: number;
@@ -36,7 +37,7 @@ export class Stores implements OnInit {
     const token = this.authService.getToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    this.http.get<Store[]>('http://localhost:8000/api/admin/stores/', { headers }).subscribe({
+    this.http.get<Store[]>(`${environment.apiUrl}/admin/stores/`, { headers }).subscribe({
       next: (stores) => {
         this.stores = stores;
         this.isLoading = false;
@@ -63,7 +64,7 @@ export class Stores implements OnInit {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     this.http.patch<Store>(
-      `http://localhost:8000/api/admin/stores/${store.id}/status`,
+      `${environment.apiUrl}/admin/stores/${store.id}/status`,
       { status: newStatus },
       { headers }
     ).subscribe({
@@ -85,7 +86,7 @@ export class Stores implements OnInit {
     const token = this.authService.getToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    this.http.delete(`http://localhost:8000/api/admin/stores/${storeId}`, { headers }).subscribe({
+    this.http.delete(`${environment.apiUrl}/admin/stores/${storeId}`, { headers }).subscribe({
       next: () => {
         this.stores = this.stores.filter(s => s.id !== storeId);
       },

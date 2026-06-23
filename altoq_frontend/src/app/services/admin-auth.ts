@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
+import { environment } from '../../environments/environment';
 
 interface AdminLoginRequest {
   username: string;
@@ -27,7 +28,7 @@ interface AdminTokenResponse {
   providedIn: 'root'
 })
 export class AdminAuthService {
-  private apiUrl = 'http://localhost:8000/api/admin';
+  private apiUrl = `${environment.apiUrl}/admin`;
   private tokenKey = 'admin_token';
   private adminSubject = new BehaviorSubject<AdminResponse | null>(this.getAdminFromStorage());
   

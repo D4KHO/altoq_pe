@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface PublicStore {
   id: number;
@@ -18,7 +19,7 @@ export interface PublicStore {
   providedIn: 'root'
 })
 export class StoreService {
-  private apiUrl = 'http://localhost:8000/api/stores';
+  private apiUrl = `${environment.apiUrl}/stores`;
 
   constructor(private http: HttpClient) {}
 
