@@ -190,7 +190,7 @@ def chat_with_product_assistant(
         raise HTTPException(status_code=400, detail="El último mensaje debe ser del usuario")
 
     model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
+        model_name="gemini-3.1-flash-lite",
         system_instruction=dynamic_instruction,
         tools=[dynamic_tool],
     )
