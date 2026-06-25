@@ -6,6 +6,7 @@ class OrderItem(BaseModel):
     productId: int
     quantity: int
     price: float
+    name: Optional[str] = None
 
 class OrderBase(BaseModel):
     user_id: int

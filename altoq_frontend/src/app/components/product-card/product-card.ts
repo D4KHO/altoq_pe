@@ -28,6 +28,9 @@ export class ProductCard {
     if (event) {
       event.stopPropagation();
     }
+    if (this.product.stock <= 0 || this.product.stock === null) {
+      return;
+    }
     this.addToCart.emit(this.product);
   }
 

@@ -23,6 +23,7 @@ class StoreResponse(BaseModel):
     logo: Optional[str] = None
     ruc: Optional[str] = None
     theme: Optional[str] = None
+    auto_confirm_orders: bool = True
     user_id: Optional[int] = None
     created_at: datetime
     status: str

@@ -110,7 +110,8 @@ export class ProductDetailComponent implements OnInit {
       price: this.product.price,
       name: this.product.name,
       image: this.product.image,
-      storeId: this.product.store_id
+      storeId: this.product.store_id,
+      stock: this.product.stock
     });
     
     // Optional: Feedback to user about color

@@ -11,6 +11,7 @@ from ..schemas.user import UserUpdate, UserRole
 from ..schemas.store import StoreCreate, StoreResponse
 from ..schemas.order import Order as OrderSchema
 from ..dependencies import get_current_user
+from .orders import _populate_order_product_names
 
 router = APIRouter(prefix="/api/seller", tags=["seller"])
 
@@ -93,6 +94,28 @@ def get_my_store(
     return StoreResponse.model_validate(store)
 
 
+@router.put("/my-store/auto-confirm", response_model=StoreResponse)
+def update_auto_confirm(
+    auto_confirm: bool,
+    current_user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Permite al vendedor activar o desactivar la confirmación automática de pedidos"""
+    user = db.query(User).filter(User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    store = db.query(Store).filter(Store.user_id == user.id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="No tienes una tienda registrada")
+        
+    store.auto_confirm_orders = auto_confirm
+    db.commit()
+    db.refresh(store)
+    
+    return StoreResponse.model_validate(store)
+
+
 @router.get("/orders", response_model=List[OrderSchema])
 def get_seller_orders(
     current_user_email: str = Depends(get_current_user),
@@ -127,6 +150,7 @@ def get_seller_orders(
             order.client_email = order.user.email if order.user else None  # type: ignore
             seller_orders.append(order)
             
+    _populate_order_product_names(seller_orders, db)
     return seller_orders
 
 
@@ -163,6 +187,18 @@ def cancel_seller_order(
     if not has_seller_product:
         raise HTTPException(status_code=403, detail="No tienes permiso para cancelar este pedido")
         
+    if order.status in ("canceled", "completed"):
+        raise HTTPException(status_code=400, detail="El pedido ya está finalizado o cancelado")
+
+    # Restaurar stock
+    for item in order_products:
+        p_id = item.get("productId")
+        qty = item.get("quantity")
+        if p_id and qty:
+            prod = db.query(Product).filter(Product.id == p_id).first()
+            if prod and prod.stock is not None:
+                prod.stock += qty
+
     # Cancelar el pedido
     order.status = "canceled"
     order.updated_at = datetime.utcnow()
@@ -176,4 +212,57 @@ def cancel_seller_order(
     db.commit()
     
     return {"message": "Pedido cancelado exitosamente", "status": order.status}
+
+
+@router.put("/orders/{order_id}/confirm", response_model=OrderSchema)
+def confirm_seller_order(
+    order_id: int,
+    current_user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Permite a un vendedor confirmar/aceptar un pedido que contenga sus productos"""
+    from datetime import datetime
+
+    user = db.query(User).filter(User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    store = db.query(Store).filter(Store.user_id == user.id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="No tienes una tienda registrada")
+        
+    order = db.query(OrderModel).filter(OrderModel.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+        
+    # Verificar si el pedido contiene algún producto de la tienda del vendedor
+    store_products = db.query(Product).filter(Product.store_id == store.id).all()
+    product_ids = [p.id for p in store_products]
+    
+    order_products = order.products or []
+    has_seller_product = any(
+        p.get("productId") in product_ids for p in order_products
+    )
+    
+    if not has_seller_product:
+        raise HTTPException(status_code=403, detail="No tienes permiso para confirmar este pedido")
+        
+    if order.status != "pending":
+        raise HTTPException(status_code=400, detail="Solo se pueden confirmar pedidos en estado pendiente")
+        
+    # Confirmar el pedido
+    order.status = "confirmed"
+    order.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(order)
+    
+    # Adjuntar código de entrega, cliente, etc.
+    dc = db.query(DeliveryCode).filter(DeliveryCode.order_id == order.id).first()
+    order.delivery_code = dc.code if dc else None
+    order.client_name = order.user.name if order.user else None
+    order.client_email = order.user.email if order.user else None
+    
+    _populate_order_product_names(order, db)
+    return order
 

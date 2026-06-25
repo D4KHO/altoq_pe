@@ -114,8 +114,27 @@ export class DeliveryTrackComponent implements OnInit, OnDestroy {
       zoom: 14
     });
 
-    // Marcador Cliente (Destino)
-    this.clientMarker = new mapboxgl.Marker({ color: '#ef4444' })
+    // Marcador Cliente (Destino) - Custom SVG House
+    const elClient = document.createElement('div');
+    elClient.className = 'custom-client-marker';
+    elClient.style.display = 'flex';
+    elClient.style.alignItems = 'center';
+    elClient.style.justifyContent = 'center';
+    elClient.style.width = '42px';
+    elClient.style.height = '42px';
+    elClient.style.backgroundColor = '#ef4444';
+    elClient.style.border = '3px solid #ffffff';
+    elClient.style.borderRadius = '50%';
+    elClient.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)';
+    elClient.style.color = 'white';
+    elClient.style.cursor = 'pointer';
+    elClient.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 22px; height: 22px;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+      </svg>
+    `;
+
+    this.clientMarker = new mapboxgl.Marker(elClient)
       .setLngLat([Number(clientLng), Number(clientLat)])
       .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
         `<div style="padding: 2px;"><p style="margin:0; font-weight:bold; font-size:12px; color:#1e293b;">Tu ubicación de entrega</p></div>`
@@ -139,7 +158,36 @@ export class DeliveryTrackComponent implements OnInit, OnDestroy {
     const mapboxgl = (window as any).mapboxgl;
 
     if (!this.sellerMarker) {
-      this.sellerMarker = new mapboxgl.Marker({ color: '#4f46e5' })
+      // Marcador Repartidor (Moto) - Custom SVG
+      const elSeller = document.createElement('div');
+      elSeller.className = 'custom-seller-marker';
+      elSeller.style.display = 'flex';
+      elSeller.style.alignItems = 'center';
+      elSeller.style.justifyContent = 'center';
+      elSeller.style.width = '42px';
+      elSeller.style.height = '42px';
+      elSeller.style.backgroundColor = '#4f46e5';
+      elSeller.style.border = '3px solid #ffffff';
+      elSeller.style.borderRadius = '50%';
+      elSeller.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)';
+      elSeller.style.color = 'white';
+      elSeller.style.cursor = 'pointer';
+      elSeller.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 24px; height: 24px;">
+          <!-- Rueda trasera -->
+          <circle cx="6" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+          <!-- Rueda delantera -->
+          <circle cx="18" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+          <!-- Caja de delivery -->
+          <rect x="3" y="8" width="5" height="5" rx="1" fill="currentColor"/>
+          <!-- Chasis/Cuerpo scooter -->
+          <path d="M6 17h12M8.5 13H14l2.5 4M13 13l1.5-4h2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Manubrio -->
+          <path d="M17 9l-1.5-3h-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+
+      this.sellerMarker = new mapboxgl.Marker(elSeller)
         .setLngLat(sellerPos)
         .addTo(this.map);
     } else {

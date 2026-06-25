@@ -34,6 +34,7 @@ class Store(Base):
     )
     ruc: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     theme: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default="default")
+    auto_confirm_orders: Mapped[bool] = mapped_column(default=True, nullable=False)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     # Relationships

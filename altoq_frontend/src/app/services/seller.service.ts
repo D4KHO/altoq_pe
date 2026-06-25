@@ -89,4 +89,18 @@ export class SellerService {
       headers: this.getHeaders()
     });
   }
+
+  updateAutoConfirm(autoConfirm: boolean): Observable<any> {
+    return this.http.put(`${this.apiUrl}/my-store/auto-confirm`, null, {
+      params: this.getParams().set('auto_confirm', autoConfirm),
+      headers: this.getHeaders()
+    });
+  }
+
+  confirmSellerOrder(orderId: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/orders/${orderId}/confirm`, null, {
+      params: this.getParams(),
+      headers: this.getHeaders()
+    });
+  }
 }

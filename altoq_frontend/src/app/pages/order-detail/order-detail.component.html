@@ -1,0 +1,294 @@
+<div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto">
+    <!-- Back Header -->
+    <div class="mb-6">
+      <a routerLink="/my-orders" class="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        Volver a Mis Pedidos
+      </a>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm animate-pulse">
+      <div class="inline-block w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+      <p class="text-slate-500 mt-3 font-medium">Cargando detalles de tu pedido...</p>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="error && !loading" class="text-center py-12 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+      <p class="text-red-500 font-semibold">{{ error }}</p>
+      <button (click)="loadOrderDetails()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition">Reintentar</button>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!loading && !error && order" class="space-y-6 animate-fade-in">
+      
+      <!-- Order Summary Card -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pedido</span>
+            <h1 class="text-2xl font-extrabold text-slate-900">#{{ order.id }}</h1>
+            <p class="text-xs text-slate-500 mt-1">Realizado el {{ formatDate(order.created_at) }} a las {{ formatTime(order.created_at) }}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="px-4 py-1.5 rounded-full text-xs font-bold" [class]="getStatusClass(order.status)">
+              {{ getStatusLabel(order.status) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Progress Stepper (5 puntos) -->
+        <div class="stepper-wrapper" *ngIf="order.status !== 'canceled'">
+          <div class="stepper-progress-line" [style.width.%]="
+            order.status === 'pending' ? 0 : 
+            (order.status === 'confirmed' ? 50 : 
+            (order.status === 'delivering' ? 75 : 100))
+          "></div>
+          
+          <!-- Punto 1: Creado -->
+          <div class="stepper-step" [class.completed]="true" [class.active]="order.status === 'pending'">
+            <div class="stepper-circle">
+              <span *ngIf="order.status !== 'pending'" class="flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </span>
+              <span *ngIf="order.status === 'pending'">1</span>
+            </div>
+            <span class="stepper-label">Creado</span>
+          </div>
+          
+          <!-- Punto 2: Aceptado -->
+          <div class="stepper-step" 
+               [class.completed]="order.status !== 'pending'" 
+               [class.active]="order.status === 'confirmed'">
+            <div class="stepper-circle">
+              <span *ngIf="order.status !== 'pending' && order.status !== 'confirmed'" class="flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </span>
+              <span *ngIf="order.status === 'pending' || order.status === 'confirmed'">2</span>
+            </div>
+            <span class="stepper-label">Aceptado</span>
+          </div>
+
+          <!-- Punto 3: Tienda Revisando -->
+          <div class="stepper-step" 
+               [class.completed]="order.status === 'delivering' || order.status === 'completed'" 
+               [class.active]="order.status === 'confirmed'">
+            <div class="stepper-circle">
+              <span *ngIf="order.status === 'delivering' || order.status === 'completed'" class="flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </span>
+              <span *ngIf="order.status === 'pending' || order.status === 'confirmed'">3</span>
+            </div>
+            <span class="stepper-label">Tienda Revisando</span>
+          </div>
+
+          <!-- Punto 4: En Camino (Delivery) -->
+          <div class="stepper-step" 
+               [class.completed]="order.status === 'completed'" 
+               [class.active]="order.status === 'delivering'">
+            <div class="stepper-circle">
+              <span *ngIf="order.status === 'completed'" class="flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </span>
+              <span *ngIf="order.status !== 'completed'">4</span>
+            </div>
+            <span class="stepper-label">En Camino</span>
+          </div>
+
+          <!-- Punto 5: Finalizado -->
+          <div class="stepper-step" 
+               [class.completed]="order.status === 'completed'"
+               [class.active]="order.status === 'completed'">
+            <div class="stepper-circle">
+              <span *ngIf="order.status === 'completed'" class="flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </span>
+              <span *ngIf="order.status !== 'completed'">5</span>
+            </div>
+            <span class="stepper-label">Finalizado</span>
+          </div>
+        </div>
+
+        <!-- Canceled alert -->
+        <div *ngIf="order.status === 'canceled'" class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm flex gap-3 items-start mt-4">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <div>
+            <strong class="font-bold block mb-1">Pedido Cancelado</strong>
+            Tu pedido fue cancelado. La devolución de tu dinero se realizará dentro de las próximas 24 horas.
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 Column Grid Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Side: Order Items, Address, Tracking Map -->
+        <div class="lg:col-span-2 space-y-6">
+          
+          <!-- Products Card -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Productos Comprados</h2>
+            <div class="space-y-4">
+              <div *ngFor="let item of order.products" class="flex justify-between items-center py-2 border-b border-slate-50 last:border-b-0 text-sm">
+                <div>
+                  <h4 class="font-bold text-slate-800">{{ item.name || 'Producto #' + item.productId }}</h4>
+                  <p class="text-xs text-slate-400 mt-0.5">Cantidad: {{ item.quantity }} x S/ {{ item.price | number:'1.2-2' }}</p>
+                </div>
+                <span class="font-extrabold text-slate-900">S/ {{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+              </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center">
+              <span class="text-sm font-extrabold text-slate-500">Monto Total</span>
+              <span class="text-xl font-black text-indigo-600">S/ {{ order.total_amount | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <!-- Delivery Address Card -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Información de Entrega</h2>
+            <div class="flex items-start gap-3 text-sm text-slate-600">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <div>
+                <span class="font-bold text-slate-700 block">Dirección de despacho</span>
+                <span class="text-slate-500 block mt-1 leading-relaxed">{{ order.shipping_address }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Map Tracking Card (Delivering Only) -->
+          <div *ngIf="order.status === 'delivering' && order.delivery_token" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in">
+            <div class="px-5 py-4 bg-emerald-50 border-b border-slate-200 flex justify-between items-center">
+              <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                <span class="flex h-2 w-2 relative">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                </span>
+                Reparto en Vivo y Directo
+              </span>
+            </div>
+            
+            <div class="relative">
+              <div id="order-detail-map" class="detail-map-container"></div>
+              <div class="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-[2px] p-3 rounded-xl border border-slate-100 flex items-center justify-between text-xs shadow-sm">
+                <span class="text-slate-600 font-medium">Repartidor en camino... actualizando cada 5s</span>
+                <span class="font-bold text-indigo-600 animate-pulse">En vivo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Delivery Code & Support Chat -->
+        <div class="space-y-6">
+          
+          <!-- Delivery Code Card -->
+          <div *ngIf="order.delivery_code && order.status !== 'canceled'" class="bg-gradient-to-br from-indigo-900 to-indigo-950 text-white rounded-2xl p-6 shadow-md border-t border-indigo-700 relative overflow-hidden">
+            <div class="absolute -right-6 -top-6 w-20 h-20 bg-indigo-800 rounded-full opacity-20"></div>
+            
+            <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-3 flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-indigo-300">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H3.75v-2.25A3.375 3.375 0 007.125 16.5h.008a3 3 0 012.122-.879l.524-.525A3.375 3.375 0 0010.88 12.8c.404-.404.982-.515 1.563-.418A6 6 0 1121.75 8.25z" />
+              </svg>
+              Código de Seguridad
+            </p>
+            
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-3xl font-mono font-black tracking-[0.25em] text-white select-all">
+                {{ order.delivery_code }}
+              </span>
+              <button (click)="copyCode(order.delivery_code)"
+                      class="flex items-center gap-1 text-xs text-indigo-900 bg-white hover:bg-indigo-50 border border-transparent rounded-lg px-3 py-2 transition font-bold shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copiar
+              </button>
+            </div>
+            
+            <p class="text-[10px] text-indigo-200 mt-4 leading-relaxed">
+              Muestra este código al motorizado al momento de la entrega física. Al validarlo en su app, se completará la transacción y se liberará el pago al vendedor.
+            </p>
+          </div>
+
+          <!-- Chat Card -->
+          <div *ngIf="order.status !== 'canceled'" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
+            <!-- Chat Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-650 px-4 py-3 flex items-center gap-2 text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <div>
+                <h3 class="text-xs font-bold">Chat con Vendedor</h3>
+                <p class="text-[9px] text-indigo-100 mt-0.5">Coordinación de despacho y soporte</p>
+              </div>
+            </div>
+
+            <!-- Messages Box -->
+            <div id="orderDetailChatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50">
+              <div *ngIf="chatLoading" class="text-center py-8 text-xs text-slate-400 font-medium">
+                Conectando chat de soporte...
+              </div>
+              <div *ngIf="chatError && !chatLoading" class="p-3 bg-amber-50 text-amber-700 text-xs rounded-xl border border-amber-100 leading-normal">
+                {{ chatError }}
+              </div>
+              <div *ngIf="!chatLoading && !chatError && chatMessages.length === 0" class="text-center py-10 text-xs text-slate-400 leading-relaxed font-medium">
+                Escribe un mensaje para coordinar con el vendedor.
+              </div>
+              
+              <!-- Message bubbles -->
+              <div *ngFor="let msg of chatMessages" class="flex flex-col" [class.items-end]="isMyMessage(msg)" [class.items-start]="!isMyMessage(msg)">
+                <div class="max-w-[85%] rounded-2xl px-3 py-2 text-xs shadow-sm"
+                     [class.bg-indigo-600]="isMyMessage(msg)"
+                     [class.text-white]="isMyMessage(msg)"
+                     [class.bg-white]="!isMyMessage(msg)"
+                     [class.text-slate-800]="!isMyMessage(msg)"
+                     [class.border]="!isMyMessage(msg)"
+                     [class.border-slate-100]="!isMyMessage(msg)"
+                     [class.rounded-tr-none]="isMyMessage(msg)"
+                     [class.rounded-tl-none]="!isMyMessage(msg)">
+                  {{ msg.content }}
+                </div>
+                <span class="text-[9px] text-slate-400 mt-1 px-1">
+                  {{ isMyMessage(msg) ? 'Tú' : 'Vendedor' }} • {{ formatTime(msg.created_at) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Chat Footer Input -->
+            <div *ngIf="chatId" class="p-3 bg-white border-t border-slate-100 flex gap-2">
+              <input type="text"
+                     [(ngModel)]="newChatMessage"
+                     (keyup.enter)="sendChatMessage()"
+                     placeholder="Escribe un mensaje..."
+                     class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-slate-700" />
+              <button (click)="sendChatMessage()"
+                      class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-4 py-2 text-xs font-bold transition flex items-center justify-center shadow-sm">
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>

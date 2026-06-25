@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { Product } from '../../models/product';
 import { ProductCard } from '../../components/product-card/product-card';
+import { CartService } from '../../services/cart';
 import { Observable, switchMap, map } from 'rxjs';
 
 @Component({
@@ -19,7 +20,8 @@ export class SearchResultsComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private productService: ProductService
+    private productService: ProductService,
+    private cartService: CartService
   ) {}
 
   ngOnInit(): void {
@@ -33,5 +35,17 @@ export class SearchResultsComponent implements OnInit {
         return this.productService.searchProducts(query);
       })
     );
+  }
+
+  onAddToCart(product: Product): void {
+    this.cartService.addToCart({
+      productId: product.id,
+      quantity: 1,
+      price: product.price,
+      name: product.name,
+      image: product.image,
+      storeId: product.store_id,
+      stock: product.stock
+    });
   }
 }
