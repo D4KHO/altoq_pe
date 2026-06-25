@@ -8,6 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { ToastService } from '../../services/toast.service';
 import { Cart } from '../../models/cart';
+import { MapboxService } from '../../services/mapbox.service';
 
 @Component({
   selector: 'app-checkout',
@@ -32,6 +33,15 @@ export class CheckoutComponent implements OnInit {
   streetAddress: string = '';
   reference: string = '';
   onlyOwnerAccepted: boolean = false;
+
+  // Coordenadas y Mapas
+  latitude: number | null = null;
+  longitude: number | null = null;
+  showMapModal: boolean = false;
+  map: any = null;
+  marker: any = null;
+  selectedLatitude: number | null = null;
+  selectedLongitude: number | null = null;
 
   // ── Step 2: Payment simulation ─────────────────────
   cardNumber: string = '';
@@ -59,7 +69,8 @@ export class CheckoutComponent implements OnInit {
     private authService: AuthService,
     private userService: UserService,
     private toastService: ToastService,
-    private router: Router
+    private router: Router,
+    private mapboxService: MapboxService
   ) {
     this.cartService.cart$.subscribe(cart => {
       this.cart = cart;
@@ -84,6 +95,8 @@ export class CheckoutComponent implements OnInit {
               this.district = defaultAddress.city || '';
               this.streetAddress = defaultAddress.street || '';
               this.reference = defaultAddress.name !== 'Dirección de envío' ? (defaultAddress.name || '') : '';
+              this.latitude = defaultAddress.latitude ?? null;
+              this.longitude = defaultAddress.longitude ?? null;
               if (defaultAddress.phone) {
                 this.recipientPhone = defaultAddress.phone;
               }
@@ -190,6 +203,109 @@ export class CheckoutComponent implements OnInit {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // ── Mapbox Selector ───────────────────────────────
+  openMapModal(): void {
+    this.showMapModal = true;
+    setTimeout(() => {
+      this.initMap();
+    }, 100);
+  }
+
+  initMap(): void {
+    const lat = this.latitude || -5.1945;
+    const lng = this.longitude || -80.6300;
+
+    const mapboxgl = (window as any).mapboxgl;
+    if (!mapboxgl) {
+      console.error('Mapbox GL JS library not loaded');
+      return;
+    }
+
+    mapboxgl.accessToken = this.mapboxService.getToken();
+
+    this.map = new mapboxgl.Map({
+      container: 'checkoutMap',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [Number(lng), Number(lat)],
+      zoom: 15
+    });
+
+    this.marker = new mapboxgl.Marker({
+      draggable: true
+    })
+      .setLngLat([Number(lng), Number(lat)])
+      .addTo(this.map);
+
+    this.selectedLatitude = Number(lat);
+    this.selectedLongitude = Number(lng);
+
+    this.marker.on('dragend', () => {
+      const lngLat = this.marker.getLngLat();
+      this.selectedLatitude = lngLat.lat;
+      this.selectedLongitude = lngLat.lng;
+    });
+
+    if (!this.latitude) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const currentLat = position.coords.latitude;
+            const currentLng = position.coords.longitude;
+            this.map.setCenter([currentLng, currentLat]);
+            this.marker.setLngLat([currentLng, currentLat]);
+            this.selectedLatitude = currentLat;
+            this.selectedLongitude = currentLng;
+          },
+          () => {}
+        );
+      }
+    }
+  }
+
+  confirmMapLocation(): void {
+    if (this.selectedLatitude && this.selectedLongitude) {
+      this.latitude = this.selectedLatitude;
+      this.longitude = this.selectedLongitude;
+
+      this.mapboxService.reverseGeocode(this.selectedLongitude, this.selectedLatitude).subscribe({
+        next: (res: any) => {
+          if (res && res.features && res.features.length > 0) {
+            const feature = res.features[0];
+            let street = feature.place_name || '';
+            let city = 'Piura';
+            let state = 'Piura';
+
+            if (feature.context) {
+              for (const ctx of feature.context) {
+                if (ctx.id.startsWith('place')) {
+                  city = ctx.text;
+                } else if (ctx.id.startsWith('region')) {
+                  state = ctx.text;
+                }
+              }
+            }
+
+            if (feature.text) {
+              street = feature.text + (feature.address ? ' ' + feature.address : '');
+            }
+
+            this.streetAddress = street;
+            this.district = city;
+            this.province = state;
+            this.department = state;
+          }
+          this.showMapModal = false;
+        },
+        error: (err: any) => {
+          console.error(err);
+          this.showMapModal = false;
+        }
+      });
+    } else {
+      this.showMapModal = false;
+    }
+  }
+
   // ── Payment simulation ─────────────────────────────
 
   simulatePay(): void {
@@ -231,6 +347,8 @@ export class CheckoutComponent implements OnInit {
                     state: this.department,
                     country: 'Peru',
                     phone: this.recipientPhone,
+                    latitude: this.latitude || undefined,
+                    longitude: this.longitude || undefined,
                     is_default: addresses.length === 0 // Make default if it's the first one
                   }).subscribe();
                 }
@@ -248,7 +366,9 @@ export class CheckoutComponent implements OnInit {
             total_amount: this.cart.totalPrice,
             status: 'pending' as const,
             shipping_address: shippingAddress,
-            contact_phone: this.recipientPhone
+            contact_phone: this.recipientPhone,
+            shipping_latitude: this.latitude || undefined,
+            shipping_longitude: this.longitude || undefined
           };
 
           this.orderService.createOrder(order).subscribe({

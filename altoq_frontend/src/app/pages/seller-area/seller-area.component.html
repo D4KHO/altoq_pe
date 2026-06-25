@@ -267,7 +267,7 @@
                 </div>
                 
                 <div class="mt-4 flex flex-col gap-2">
-                  <a *ngIf="order.status !== 'completed' && order.status !== 'canceled'" routerLink="/delivery" class="w-full text-center bg-indigo-600 text-white rounded-xl py-2.5 text-xs font-bold hover:bg-indigo-700 transition shadow-sm hover:shadow">
+                  <a *ngIf="order.status !== 'completed' && order.status !== 'canceled'" [routerLink]="['/delivery/manage', order.id]" class="w-full text-center bg-indigo-600 text-white rounded-xl py-2.5 text-xs font-bold hover:bg-indigo-700 transition shadow-sm hover:shadow">
                     Ir a Validar Entrega
                   </a>
                   <button *ngIf="order.status !== 'completed' && order.status !== 'canceled'" (click)="cancelOrder(order.id)" class="w-full text-center bg-red-50 text-red-600 border border-red-200 rounded-xl py-2.5 text-xs font-bold hover:bg-red-100 transition shadow-sm">

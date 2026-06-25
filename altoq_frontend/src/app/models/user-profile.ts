@@ -9,6 +9,8 @@ export interface Address {
   country: string;
   phone?: string;
   is_default: boolean;
+  latitude?: number;
+  longitude?: number;
   created_at: string;
 }
 
@@ -21,6 +23,8 @@ export interface AddressCreate {
   country?: string;
   phone?: string;
   is_default?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface AddressUpdate {
@@ -32,6 +36,8 @@ export interface AddressUpdate {
   country?: string;
   phone?: string;
   is_default?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface UserUpdate {

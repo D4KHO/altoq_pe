@@ -1,3 +1,11 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import "tailwindcss";
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

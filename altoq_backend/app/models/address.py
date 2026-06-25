@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, Index
+from sqlalchemy import String, Boolean, DateTime, ForeignKey, Index, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -30,6 +30,8 @@ class Address(Base):
     country: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     is_default: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships

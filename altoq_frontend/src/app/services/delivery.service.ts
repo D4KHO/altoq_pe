@@ -22,4 +22,16 @@ export class DeliveryService {
   getDeliveryCodeByOrder(orderId: number): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/order/${orderId}`);
   }
+
+  startDelivery(orderId: number, coords: { latitude?: number; longitude?: number }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/start/${orderId}`, coords);
+  }
+
+  updateLocation(orderId: number, coords: { latitude: number; longitude: number }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/update-location/${orderId}`, coords);
+  }
+
+  trackDelivery(token: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/track/${token}`);
+  }
 }

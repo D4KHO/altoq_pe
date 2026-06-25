@@ -14,6 +14,8 @@ class OrderBase(BaseModel):
     status: str = "pending"
     shipping_address: str = ""
     contact_phone: str = ""
+    shipping_latitude: Optional[float] = None
+    shipping_longitude: Optional[float] = None
 
 class OrderCreate(OrderBase):
     pass
@@ -25,6 +27,10 @@ class OrderResponse(OrderBase):
     delivery_code: Optional[str] = None
     client_name: Optional[str] = None
     client_email: Optional[str] = None
+    delivery_latitude: Optional[float] = None
+    delivery_longitude: Optional[float] = None
+    delivery_status: Optional[str] = None
+    delivery_token: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -36,6 +42,10 @@ class Order(OrderBase):
     delivery_code: Optional[str] = None
     client_name: Optional[str] = None
     client_email: Optional[str] = None
+    delivery_latitude: Optional[float] = None
+    delivery_longitude: Optional[float] = None
+    delivery_status: Optional[str] = None
+    delivery_token: Optional[str] = None
 
     class Config:
         from_attributes = True

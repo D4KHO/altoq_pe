@@ -90,6 +90,17 @@ export const routes: Routes = [
       import('./pages/store-page/store-page.component').then((m) => m.StorePageComponent),
     canActivate: [authGuard]
   },
+  {
+    path: 'delivery/manage/:id',
+    loadComponent: () =>
+      import('./pages/delivery-manage/delivery-manage.component').then((m) => m.DeliveryManageComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'delivery/track/:token',
+    loadComponent: () =>
+      import('./pages/delivery-track/delivery-track.component').then((m) => m.DeliveryTrackComponent),
+  },
   // Admin routes
   {
     path: 'admin/login',

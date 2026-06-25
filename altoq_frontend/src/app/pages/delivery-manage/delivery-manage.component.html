@@ -1,0 +1,199 @@
+<div class="min-h-screen bg-slate-50 pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <a routerLink="/seller-area" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 mb-2">
+          ← Volver a Ventas
+        </a>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Gestión de Entrega</h1>
+        <p class="text-xs text-slate-500 mt-1">Sigue el estado y valida el pedido en tiempo real</p>
+      </div>
+      <div *ngIf="order" class="px-3.5 py-1.5 rounded-full text-xs font-bold shadow-sm"
+           [class.bg-amber-100]="order.status === 'pending'" [class.text-amber-800]="order.status === 'pending'"
+           [class.bg-indigo-100]="order.status === 'delivering'" [class.text-indigo-800]="order.status === 'delivering'"
+           [class.bg-green-100]="order.status === 'completed'" [class.text-green-800]="order.status === 'completed'">
+        Pedido #{{ order.id }} - {{ order.status === 'delivering' ? 'En Ruta' : (order.status === 'completed' ? 'Completado' : 'Pendiente') }}
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="loading" class="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+      <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      <p class="text-sm text-slate-500 font-medium mt-4">Cargando detalles de entrega...</p>
+    </div>
+
+    <!-- Main content -->
+    <div *ngIf="!loading && order" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left side: Map and actions -->
+      <div class="lg:col-span-2 flex flex-col gap-6">
+        
+        <!-- Map Container -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 text-indigo-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Mapa de Navegación
+            </h2>
+            <span *ngIf="watchId" class="flex items-center gap-1.5 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-1 rounded-md">
+              <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping"></span>
+              GPS Activo
+            </span>
+          </div>
+          
+          <div class="relative w-full h-[350px] bg-slate-100">
+            <div id="manageMap" class="w-full h-full"></div>
+            
+            <!-- Map Overlay if Geolocation is required but not started -->
+            <div *ngIf="order.status !== 'delivering' && order.status !== 'completed'" class="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] flex flex-col items-center justify-center text-center p-6">
+              <div class="bg-white p-6 rounded-2xl max-w-sm shadow-xl border border-slate-100">
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 class="font-bold text-slate-800 text-sm">¿Listo para iniciar el viaje?</h3>
+                <p class="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
+                  Para poder dar seguimiento en tiempo real (tipo Rappi) al cliente, necesitamos acceder a tu ubicación GPS.
+                </p>
+                <button (click)="startDelivery()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition shadow-sm">
+                  Iniciar Ruta de Entrega
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sharing panel -->
+        <div *ngIf="order.status === 'delivering'" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+          <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 text-slate-600">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+            </svg>
+            Compartir Seguimiento en Tiempo Real
+          </h3>
+          <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+            Puedes compartir este enlace temporal para que el comprador vea tu trayecto en el mapa en tiempo real, sin requerir iniciar sesión.
+          </p>
+
+          <div class="flex items-center gap-2 mb-4 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+            <span class="text-xs text-slate-600 font-mono truncate flex-1 select-all pr-2">
+              {{ trackingUrl }}
+            </span>
+            <button (click)="copyTrackingLink()" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 flex-shrink-0 shadow-sm">
+              Copiar
+            </button>
+          </div>
+
+          <button (click)="shareOnWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+            <svg class="h-4.5 w-4.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.197 1.45 4.817 1.451 5.46.002 9.902-4.43 9.904-9.885.001-2.643-1.026-5.127-2.89-6.994C16.59 1.86 14.113.832 11.474.832c-5.461 0-9.905 4.432-9.907 9.888-.001 1.794.469 3.548 1.362 5.093L1.87 22.09l6.33-1.658c-1.52.83-2.73.55-1.55-.385z"/>
+            </svg>
+            Compartir por WhatsApp al Cliente
+          </button>
+        </div>
+      </div>
+
+      <!-- Right side: Order info & code verification -->
+      <div class="flex flex-col gap-6">
+        
+        <!-- Code Verification Form -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 text-indigo-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H3.75v-2.25A3.375 3.375 0 007.125 16.5h.008a3 3 0 012.122-.879l.524-.525A3.375 3.375 0 0010.88 12.8c.404-.404.982-.515 1.563-.418A6 6 0 1121.75 8.25z" />
+              </svg>
+              Validar Código de Entrega
+            </h3>
+            
+            <!-- Pending / Delivering status form -->
+            <div *ngIf="order.status !== 'completed'">
+              <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+                Cuando llegues al domicilio y le entregues los productos al comprador, pídele su <strong>código de entrega de 6 caracteres</strong> para completar el proceso y liberar el dinero.
+              </p>
+              
+              <div class="mb-4">
+                <input type="text" [(ngModel)]="validationCode" placeholder="Escribe el código aquí" 
+                       class="w-full text-center tracking-widest text-lg font-mono font-bold uppercase rounded-xl border border-slate-300 px-3 py-3.5 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition" />
+              </div>
+              
+              <button (click)="validateCode()" [disabled]="validating || order.status !== 'delivering'"
+                      class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:border-slate-200 text-white font-bold py-3 px-4 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5">
+                <span *ngIf="validating" class="w-3.5 h-3.5 border-2 border-white border-t-indigo-600 rounded-full animate-spin"></span>
+                Confirmar y Completar Pedido
+              </button>
+              
+              <p *ngIf="order.status !== 'delivering'" class="text-[10px] text-amber-600 font-medium text-center mt-2.5">
+                ⚠️ Debes iniciar la ruta de entrega antes de validar el código.
+              </p>
+            </div>
+            
+            <!-- Completed status view -->
+            <div *ngIf="order.status === 'completed'" class="text-center py-4 bg-green-50 border border-green-200 rounded-2xl px-4 flex flex-col items-center">
+              <div class="w-10 h-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-5 h-5 text-green-600">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+              <h4 class="font-bold text-green-800 text-sm">¡Pedido Entregado!</h4>
+              <p class="text-xs text-green-700 mt-1 mb-2 leading-relaxed">
+                El código ha sido validado correctamente. La orden ha sido marcada como completada y el pago ha sido liberado al vendedor.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order details summary -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+          <h3 class="text-sm font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 text-slate-500">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Detalles del Envío
+          </h3>
+          
+          <div class="space-y-4">
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cliente</span>
+              <span class="text-xs font-semibold text-slate-700 block mt-0.5">{{ order.client_name || 'Pepito' }}</span>
+              <span class="text-xs text-slate-500 block mt-0.5">{{ order.client_email || 'correo@gmail.com' }}</span>
+            </div>
+
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Teléfono de Contacto</span>
+              <span class="text-xs font-semibold text-slate-700 mt-0.5 block">{{ order.contact_phone || '+51 987654321' }}</span>
+            </div>
+
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dirección de Destino</span>
+              <span class="text-xs font-semibold text-slate-700 mt-0.5 block leading-relaxed">{{ order.shipping_address }}</span>
+            </div>
+
+            <div class="pt-2 border-t border-slate-50">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Productos</span>
+              <div *ngFor="let item of order.products" class="flex justify-between items-center text-xs text-slate-600 py-1">
+                <span>Prod ID #{{ item.productId }} <span class="text-slate-400 font-medium">x{{ item.quantity }}</span></span>
+                <span class="font-medium text-slate-700">S/ {{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Monto Total</span>
+              <span class="text-base font-extrabold text-indigo-600">S/ {{ order.total_amount | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>

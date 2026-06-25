@@ -77,6 +77,9 @@ def create_order(
         status="pending",
         shipping_address=order.shipping_address,
         contact_phone=order.contact_phone,
+        shipping_latitude=order.shipping_latitude,
+        shipping_longitude=order.shipping_longitude,
+        delivery_status="pending",
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
@@ -130,11 +133,31 @@ def get_order(
     order = db.query(OrderModel).filter(OrderModel.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
-    if order.user_id != user.id:
+    
+    is_buyer = order.user_id == user.id
+    
+    is_seller = False
+    products_in_order = order.products or []
+    product_ids = [p.get("productId") for p in products_in_order if p.get("productId")]
+    if product_ids:
+        seller_store = db.query(Store).filter(Store.user_id == user.id).first()
+        if seller_store:
+            matching = db.query(Product).filter(
+                Product.id.in_(product_ids),
+                Product.store_id == seller_store.id
+            ).first()
+            if matching:
+                is_seller = True
+
+    if not is_buyer and not is_seller:
         raise HTTPException(status_code=403, detail="Sin acceso a esta orden")
 
     dc = db.query(DeliveryCode).filter(DeliveryCode.order_id == order.id).first()
-    order.delivery_code = dc.code if dc else None  # type: ignore[attr-defined]
+    if is_buyer:
+        order.delivery_code = dc.code if dc else None  # type: ignore[attr-defined]
+    else:
+        order.delivery_code = None  # type: ignore[attr-defined]
+        
     order.client_name = order.user.name if order.user else None  # type: ignore[attr-defined]
     order.client_email = order.user.email if order.user else None  # type: ignore[attr-defined]
     return order

@@ -30,6 +30,12 @@ class Order(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     shipping_address: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     contact_phone: Mapped[str] = mapped_column(String(20), nullable=False, default="")
+    shipping_latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    shipping_longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    delivery_latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    delivery_longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    delivery_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="pending")
+    delivery_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, unique=True)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="orders")

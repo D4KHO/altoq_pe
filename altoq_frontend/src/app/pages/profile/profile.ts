@@ -5,6 +5,7 @@ import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { Address, AddressCreate, UserUpdate, PasswordChange } from '../../models/user-profile';
 import { User } from '../../models/auth';
+import { MapboxService } from '../../services/mapbox.service';
 
 @Component({
   selector: 'app-profile',
@@ -30,10 +31,18 @@ export class ProfileComponent implements OnInit {
   editingAddress: Address | null = null;
   showAddressForm = false;
 
+  // Variables para Mapbox
+  showMapModal = false;
+  map: any = null;
+  marker: any = null;
+  selectedLatitude: number | null = null;
+  selectedLongitude: number | null = null;
+
   constructor(
     private fb: FormBuilder,
     private userService: UserService,
-    private authService: AuthService
+    private authService: AuthService,
+    private mapboxService: MapboxService
   ) {
     this.profileForm = this.fb.group({
       name: ['', Validators.required],
@@ -54,7 +63,9 @@ export class ProfileComponent implements OnInit {
       postal_code: [''],
       country: ['Peru'],
       phone: [''],
-      is_default: [false]
+      is_default: [false],
+      latitude: [null],
+      longitude: [null]
     });
   }
 
@@ -176,6 +187,112 @@ export class ProfileComponent implements OnInit {
       this.addressForm.patchValue(address);
     } else {
       this.addressForm.reset({ country: 'Peru', is_default: false });
+    }
+  }
+
+  openMapModal() {
+    this.showMapModal = true;
+    setTimeout(() => {
+      this.initMap();
+    }, 100);
+  }
+
+  initMap() {
+    const lat = this.addressForm.get('latitude')?.value || -5.1945;
+    const lng = this.addressForm.get('longitude')?.value || -80.6300;
+
+    const mapboxgl = (window as any).mapboxgl;
+    if (!mapboxgl) {
+      console.error('Mapbox GL JS library not loaded');
+      return;
+    }
+
+    mapboxgl.accessToken = this.mapboxService.getToken();
+
+    this.map = new mapboxgl.Map({
+      container: 'profileMap',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [Number(lng), Number(lat)],
+      zoom: 15
+    });
+
+    this.marker = new mapboxgl.Marker({
+      draggable: true
+    })
+      .setLngLat([Number(lng), Number(lat)])
+      .addTo(this.map);
+
+    this.selectedLatitude = Number(lat);
+    this.selectedLongitude = Number(lng);
+
+    this.marker.on('dragend', () => {
+      const lngLat = this.marker.getLngLat();
+      this.selectedLatitude = lngLat.lat;
+      this.selectedLongitude = lngLat.lng;
+    });
+
+    if (!this.addressForm.get('latitude')?.value) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const currentLat = position.coords.latitude;
+            const currentLng = position.coords.longitude;
+            this.map.setCenter([currentLng, currentLat]);
+            this.marker.setLngLat([currentLng, currentLat]);
+            this.selectedLatitude = currentLat;
+            this.selectedLongitude = currentLng;
+          },
+          () => {}
+        );
+      }
+    }
+  }
+
+  confirmMapLocation() {
+    if (this.selectedLatitude && this.selectedLongitude) {
+      this.addressForm.patchValue({
+        latitude: this.selectedLatitude,
+        longitude: this.selectedLongitude
+      });
+
+      this.mapboxService.reverseGeocode(this.selectedLongitude, this.selectedLatitude).subscribe({
+        next: (res: any) => {
+          if (res && res.features && res.features.length > 0) {
+            const feature = res.features[0];
+            let street = feature.place_name || '';
+            let city = 'Piura';
+            let state = 'Piura';
+
+            if (feature.context) {
+              for (const ctx of feature.context) {
+                if (ctx.id.startsWith('place')) {
+                  city = ctx.text;
+                } else if (ctx.id.startsWith('region')) {
+                  state = ctx.text;
+                }
+              }
+            }
+
+            if (feature.text) {
+              street = feature.text + (feature.address ? ' ' + feature.address : '');
+            }
+
+            this.addressForm.patchValue({
+              street: street,
+              city: city,
+              state: state,
+              postal_code: ''
+            });
+          }
+          this.showMapModal = false;
+        },
+        error: (err: any) => {
+          console.error(err);
+          this.showMapModal = false;
+        }
+      });
+    } else {
+      this.showMapModal = false;
     }
   }
 

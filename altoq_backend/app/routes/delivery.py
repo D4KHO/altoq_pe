@@ -9,8 +9,9 @@ from ..models.order import Order
 from ..models.product import Product
 from ..models.store import Store
 from ..models.user import User
-from ..schemas.delivery import DeliveryCodeResponse, DeliveryValidation
+from ..schemas.delivery import DeliveryCodeResponse, DeliveryValidation, DeliveryLocationUpdate, DeliveryStart, DeliveryTrackingResponse
 from ..dependencies import get_current_user
+import secrets
 
 router = APIRouter(prefix="/api/delivery", tags=["delivery"])
 
@@ -120,6 +121,7 @@ def validate_delivery_code(
     delivery_code.is_used = True
     delivery_code.used_at = datetime.utcnow()
     order.status = "completed"
+    order.delivery_status = "completed"
     order.updated_at = datetime.utcnow()
 
     db.commit()
@@ -155,3 +157,156 @@ def get_delivery_code_by_order(
         raise HTTPException(status_code=404, detail="No hay código de entrega para este pedido")
 
     return delivery_code
+
+
+@router.post("/start/{order_id}", response_model=dict)
+def start_delivery(
+    order_id: int,
+    start_data: DeliveryStart,
+    current_user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Iniciar la entrega de un pedido.
+    Solo el vendedor de algún producto de la orden puede iniciarla.
+    Genera un token de rastreo temporal público.
+    """
+    user = db.query(User).filter(User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+    if order.status in ("completed", "canceled"):
+        raise HTTPException(status_code=400, detail="No se puede iniciar la entrega de un pedido completado o cancelado")
+
+    # Verificar que el usuario es vendedor de al menos un producto de la orden
+    products_in_order = order.products or []
+    product_ids = [p.get("productId") for p in products_in_order if p.get("productId")]
+
+    is_seller = False
+    if product_ids:
+        seller_store = db.query(Store).filter(Store.user_id == user.id).first()
+        if seller_store:
+            matching = db.query(Product).filter(
+                Product.id.in_(product_ids),
+                Product.store_id == seller_store.id
+            ).first()
+            if matching:
+                is_seller = True
+
+    if not is_seller:
+        raise HTTPException(
+            status_code=403,
+            detail="No eres el vendedor de ningún producto en esta orden"
+        )
+
+    # Generar token si no tiene uno
+    if not order.delivery_token:
+        order.delivery_token = secrets.token_hex(16)
+
+    # Actualizar coordenadas de inicio
+    if start_data.latitude is not None and start_data.longitude is not None:
+        order.delivery_latitude = start_data.latitude
+        order.delivery_longitude = start_data.longitude
+
+    order.delivery_status = "delivering"
+    order.status = "delivering"  # Actualizar estado de orden
+    order.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {
+        "message": "Entrega iniciada con éxito",
+        "delivery_token": order.delivery_token,
+        "delivery_status": "delivering"
+    }
+
+
+@router.post("/update-location/{order_id}", response_model=dict)
+def update_delivery_location(
+    order_id: int,
+    location: DeliveryLocationUpdate,
+    current_user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Actualizar la ubicación en tiempo real del repartidor (vendedor).
+    """
+    user = db.query(User).filter(User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+    # Verificar que el usuario es vendedor de al menos un producto de la orden
+    products_in_order = order.products or []
+    product_ids = [p.get("productId") for p in products_in_order if p.get("productId")]
+
+    is_seller = False
+    if product_ids:
+        seller_store = db.query(Store).filter(Store.user_id == user.id).first()
+        if seller_store:
+            matching = db.query(Product).filter(
+                Product.id.in_(product_ids),
+                Product.store_id == seller_store.id
+            ).first()
+            if matching:
+                is_seller = True
+
+    if not is_seller:
+        raise HTTPException(
+            status_code=403,
+            detail="No eres el vendedor de ningún producto en esta orden"
+        )
+
+    order.delivery_latitude = location.latitude
+    order.delivery_longitude = location.longitude
+    order.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {"message": "Ubicación actualizada"}
+
+
+@router.get("/track/{token}", response_model=DeliveryTrackingResponse)
+def track_delivery_public(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Ruta Pública: Obtener información del seguimiento mediante el token temporal.
+    No requiere autenticación.
+    """
+    order = db.query(Order).filter(Order.delivery_token == token).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Seguimiento de entrega no encontrado o token inválido")
+
+    # Encontrar nombre de la tienda del vendedor
+    products_in_order = order.products or []
+    product_ids = [p.get("productId") for p in products_in_order if p.get("productId")]
+    store_name = None
+    if product_ids:
+        matching_product = db.query(Product).filter(Product.id == product_ids[0]).first()
+        if matching_product and matching_product.store_id:
+            store = db.query(Store).filter(Store.id == matching_product.store_id).first()
+            if store:
+                store_name = store.name
+
+    return {
+        "order_id": order.id,
+        "total_amount": order.total_amount,
+        "shipping_address": order.shipping_address,
+        "shipping_latitude": order.shipping_latitude,
+        "shipping_longitude": order.shipping_longitude,
+        "delivery_latitude": order.delivery_latitude,
+        "delivery_longitude": order.delivery_longitude,
+        "delivery_status": order.delivery_status,
+        "client_name": order.user.name if order.user else "Cliente",
+        "contact_phone": order.contact_phone,
+        "store_name": store_name,
+        "products": products_in_order
+    }
+

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { SellerService } from '../../services/seller.service';
 import { ProductService } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
@@ -11,7 +12,7 @@ import { ConversationalAssistantComponent } from '../../components/conversationa
 @Component({
   selector: 'app-seller-area',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConversationalAssistantComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ConversationalAssistantComponent],
   templateUrl: './seller-area.component.html',
   styleUrls: ['./seller-area.component.css']
 })

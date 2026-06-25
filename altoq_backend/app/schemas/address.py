@@ -11,6 +11,8 @@ class AddressBase(BaseModel):
     country: str = "Peru"
     phone: Optional[str] = None
     is_default: bool = False
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class AddressCreate(AddressBase):
     pass
@@ -24,6 +26,8 @@ class AddressUpdate(BaseModel):
     country: Optional[str] = None
     phone: Optional[str] = None
     is_default: Optional[bool] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class AddressResponse(AddressBase):
     id: int
