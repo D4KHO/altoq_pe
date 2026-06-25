@@ -50,7 +50,7 @@
         <!-- Bubble -->
         <div class="px-5 py-3.5 text-[0.95rem] leading-relaxed rounded-2xl"
              [ngClass]="message.sender === 'user' ? 'bg-slate-900 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm border border-gray-200/60'">
-          <p class="whitespace-pre-wrap m-0 font-normal">{{ message.content }}</p>
+          <p class="whitespace-pre-wrap m-0 font-normal" [innerHTML]="message.content | markdownFormat"></p>
         </div>
       </div>
     </div>
