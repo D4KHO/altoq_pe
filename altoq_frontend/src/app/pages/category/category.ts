@@ -6,6 +6,7 @@ import { CategoryService } from '../../services/category.service';
 import { Product } from '../../models/product';
 import { Category } from '../../models/category';
 import { ProductCard } from '../../components/product-card/product-card';
+import { CartService } from '../../services/cart';
 import { Observable, switchMap, tap } from 'rxjs';
 
 @Component({
@@ -23,7 +24,8 @@ export class CategoryComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private productService: ProductService,
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private cartService: CartService
   ) {}
 
   ngOnInit(): void {
@@ -38,5 +40,17 @@ export class CategoryComponent implements OnInit {
   loadData(slug: string): void {
     this.category$ = this.categoryService.getCategoryBySlug(slug);
     this.products$ = this.productService.getProductsByCategory(slug);
+  }
+
+  onAddToCart(product: Product): void {
+    this.cartService.addToCart({
+      productId: product.id,
+      quantity: 1,
+      price: product.price,
+      name: product.name,
+      image: product.image,
+      storeId: product.store_id,
+      stock: product.stock
+    });
   }
 }

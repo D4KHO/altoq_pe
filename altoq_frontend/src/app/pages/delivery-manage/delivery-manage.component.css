@@ -3,3 +3,13 @@
   background-color: #f1f5f9;
   border-radius: 1.5rem;
 }
+
+::ng-deep .custom-client-marker,
+::ng-deep .custom-seller-marker {
+  transition: transform 0.2s ease-out;
+}
+
+::ng-deep .custom-client-marker:hover,
+::ng-deep .custom-seller-marker:hover {
+  transform: scale(1.12);
+}

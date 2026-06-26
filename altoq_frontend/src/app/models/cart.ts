@@ -10,4 +10,5 @@ export interface CartItem {
   name: string;
   image?: string;
   storeId?: number;
+  stock?: number;
 }

@@ -154,6 +154,29 @@
           <button (click)="setDashboardTab('stats')" class="close-view-btn">Cerrar</button>
         </div>
 
+        <!-- Switch de Confirmación Automática -->
+        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 text-white p-2 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Confirmación Automática de Pedidos</h3>
+              <p class="text-xs text-slate-500">Si está desactivado, los nuevos pedidos quedarán "Pendientes" hasta que los aceptes manualmente.</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              class="sr-only peer" 
+              [checked]="store?.auto_confirm_orders" 
+              (change)="toggleAutoConfirm($event)">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
         <!-- Sub-pestañas de filtrado de pedidos -->
         <div *ngIf="!ordersLoading && sellerOrders.length > 0" class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-3">
           <button 
@@ -267,14 +290,31 @@
                 </div>
                 
                 <div class="mt-4 flex flex-col gap-2">
-                  <a *ngIf="order.status !== 'completed' && order.status !== 'canceled'" [routerLink]="['/delivery/manage', order.id]" class="w-full text-center bg-indigo-600 text-white rounded-xl py-2.5 text-xs font-bold hover:bg-indigo-700 transition shadow-sm hover:shadow">
-                    Ir a Validar Entrega
-                  </a>
-                  <button *ngIf="order.status !== 'completed' && order.status !== 'canceled'" (click)="cancelOrder(order.id)" class="w-full text-center bg-red-50 text-red-600 border border-red-200 rounded-xl py-2.5 text-xs font-bold hover:bg-red-100 transition shadow-sm">
-                    Cancelar Pedido
-                  </button>
+                  <!-- Si el pedido está Pendiente, mostrar Aceptar/Rechazar -->
+                  <ng-container *ngIf="order.status === 'pending'">
+                    <button (click)="confirmOrder(order.id)" class="w-full text-center bg-indigo-600 text-white rounded-xl py-2.5 text-xs font-bold hover:bg-indigo-700 transition shadow-sm hover:shadow">
+                      Confirmar Pedido
+                    </button>
+                    <button (click)="cancelOrder(order.id)" class="w-full text-center bg-red-50 text-red-600 border border-red-200 rounded-xl py-2.5 text-xs font-bold hover:bg-red-100 transition shadow-sm">
+                      Rechazar Pedido
+                    </button>
+                  </ng-container>
+
+                  <!-- Si el pedido está Confirmado o En Delivery, mostrar Validar/Cancelar -->
+                  <ng-container *ngIf="order.status === 'confirmed' || order.status === 'delivering'">
+                    <a [routerLink]="['/delivery/manage', order.id]" class="w-full text-center bg-indigo-600 text-white rounded-xl py-2.5 text-xs font-bold hover:bg-indigo-700 transition shadow-sm hover:shadow">
+                      Ir a Validar Entrega
+                    </a>
+                    <button (click)="cancelOrder(order.id)" class="w-full text-center bg-red-50 text-red-600 border border-red-200 rounded-xl py-2.5 text-xs font-bold hover:bg-red-100 transition shadow-sm">
+                      Cancelar Pedido
+                    </button>
+                  </ng-container>
+
                   <div *ngIf="order.status === 'canceled'" class="text-center text-xs text-red-500 font-semibold py-2 bg-red-50 border border-red-100 rounded-xl">
-                    Pedido Cancelado
+                    Pedido Rechazado / Cancelado
+                  </div>
+                  <div *ngIf="order.status === 'completed'" class="text-center text-xs text-green-500 font-semibold py-2 bg-green-50 border border-green-100 rounded-xl">
+                    Pedido Entregado
                   </div>
                 </div>
               </div>

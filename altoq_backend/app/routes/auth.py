@@ -110,13 +110,17 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(credentials: UserLogin, db: Session = Depends(get_db)):
     """Iniciar sesión"""
+    print(f"DEBUG LOGIN: email={credentials.email}, password={credentials.password}")
     # Buscar usuario por email
     db_user = db.query(UserModel).filter(UserModel.email == credentials.email).first()
     if not db_user:
+        print("DEBUG LOGIN: User not found in DB")
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     
     # Verificar password
-    if not verify_password(credentials.password, db_user.password):
+    is_valid = verify_password(credentials.password, db_user.password)
+    print(f"DEBUG LOGIN: db_user found, hash={db_user.password}, matches={is_valid}")
+    if not is_valid:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     
     # Crear token

@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth.service';
 import { Address, AddressCreate, UserUpdate, PasswordChange } from '../../models/user-profile';
 import { User } from '../../models/auth';
 import { MapboxService } from '../../services/mapbox.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-profile',
@@ -18,7 +19,7 @@ export class ProfileComponent implements OnInit {
   user: User | null = null;
   addresses: Address[] = [];
 
-  activeTab: 'profile' | 'password' | 'addresses' = 'profile';
+  activeTab: 'profile' | 'password' | 'addresses' | 'cards' = 'profile';
 
   profileForm: FormGroup;
   passwordForm: FormGroup;
@@ -38,11 +39,14 @@ export class ProfileComponent implements OnInit {
   selectedLatitude: number | null = null;
   selectedLongitude: number | null = null;
 
+  savedCard: any = null;
+
   constructor(
     private fb: FormBuilder,
     private userService: UserService,
     private authService: AuthService,
-    private mapboxService: MapboxService
+    private mapboxService: MapboxService,
+    private toastService: ToastService
   ) {
     this.profileForm = this.fb.group({
       name: ['', Validators.required],
@@ -71,13 +75,14 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit() {
     this.authService.user$.subscribe(user => {
+      this.user = user;
       if (user) {
-        this.user = user;
         this.profileForm.patchValue({
           name: user.name,
           phone: user.phone || ''
         });
       }
+      this.loadSavedCard();
     });
 
     this.loadProfile();
@@ -89,10 +94,42 @@ export class ProfileComponent implements OnInit {
       ? null : { mismatch: true };
   }
 
-  setTab(tab: 'profile' | 'password' | 'addresses') {
+  setTab(tab: 'profile' | 'password' | 'addresses' | 'cards') {
     this.activeTab = tab;
     this.message = '';
     this.error = '';
+    if (tab === 'cards') {
+      this.loadSavedCard();
+    }
+  }
+
+  loadSavedCard() {
+    const user = this.authService.userValue;
+    if (user && user.email) {
+      const cardKey = `saved_card_${user.email}`;
+      const cardData = localStorage.getItem(cardKey);
+      if (cardData) {
+        try {
+          this.savedCard = JSON.parse(cardData);
+        } catch (e) {
+          this.savedCard = null;
+        }
+      } else {
+        this.savedCard = null;
+      }
+    } else {
+      this.savedCard = null;
+    }
+  }
+
+  deleteSavedCard() {
+    const user = this.authService.userValue;
+    if (user && user.email) {
+      const cardKey = `saved_card_${user.email}`;
+      localStorage.removeItem(cardKey);
+    }
+    this.savedCard = null;
+    this.toastService.show('Tarjeta eliminada correctamente.', 'success');
   }
 
   // ===== PROFILE =====

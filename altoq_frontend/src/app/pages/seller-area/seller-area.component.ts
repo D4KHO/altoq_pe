@@ -431,4 +431,46 @@ export class SellerAreaComponent implements OnInit {
       }
     });
   }
+
+  toggleAutoConfirm(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const autoConfirm = input.checked;
+    
+    this.sellerService.updateAutoConfirm(autoConfirm).subscribe({
+      next: (response) => {
+        if (this.store) {
+          this.store.auto_confirm_orders = response.auto_confirm_orders;
+        }
+        this.toastService.show(
+          autoConfirm ? 'Confirmación automática activada.' : 'Confirmación automática desactivada.',
+          'success'
+        );
+      },
+      error: (err) => {
+        console.error('Error toggling auto confirm:', err);
+        this.toastService.show('Error al cambiar la confirmación automática.', 'error');
+        input.checked = !autoConfirm;
+      }
+    });
+  }
+
+  confirmOrder(orderId: number): void {
+    this.openConfirmModal(
+      'Confirmar Pedido',
+      '¿Estás seguro de que deseas confirmar/aceptar este pedido? El estado cambiará a Aceptado y se le notificará al cliente.',
+      () => {
+        this.sellerService.confirmSellerOrder(orderId).subscribe({
+          next: (response) => {
+            this.toastService.show('Pedido confirmado exitosamente.', 'success');
+            this.loadSellerOrders();
+          },
+          error: (error) => {
+            console.error('Error confirming order:', error);
+            const errorMsg = error.error?.detail || 'Error al confirmar el pedido. Intenta nuevamente.';
+            this.toastService.show(errorMsg, 'error');
+          }
+        });
+      }
+    );
+  }
 }

@@ -1,6 +1,9 @@
 
 <div class="rounded-lg border border-slate-200 bg-white overflow-hidden cursor-pointer group flex flex-col h-full" (click)="goToDetail($event)">
   <div class="block relative h-48 sm:h-56"> <!-- Fixed height image container -->
+    <div *ngIf="product.stock <= 0 || product.stock === null" class="absolute top-2 left-2 z-10 bg-red-600 text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded shadow-sm">
+      Agotado
+    </div>
     <img *ngIf="product.image" [src]="product.image" [alt]="product.name" class="w-full h-full object-cover" />
     <div *ngIf="!product.image" class="flex w-full h-full items-center justify-center bg-slate-100 text-slate-500">Sin imagen</div>
   </div>
@@ -45,8 +48,13 @@
 
 		<div class="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
 			<span class="text-lg font-bold text-blue-900">S/ {{ product.price | number:'1.2-2' }}</span>
-      <button (click)="onAddToCart($event)" class="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700 transition-colors shadow-sm">
-        Agregar
+      <button 
+        (click)="onAddToCart($event)" 
+        [disabled]="product.stock <= 0 || product.stock === null"
+        [class.opacity-50]="product.stock <= 0 || product.stock === null"
+        [class.cursor-not-allowed]="product.stock <= 0 || product.stock === null"
+        class="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700 transition-colors shadow-sm">
+        {{ (product.stock <= 0 || product.stock === null) ? 'Sin Stock' : 'Agregar' }}
       </button>
 		</div>
 	</div>

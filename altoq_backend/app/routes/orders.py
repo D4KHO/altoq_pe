@@ -41,6 +41,32 @@ def _create_delivery_code(db: Session, order_id: int) -> DeliveryCode:
     db.refresh(new_code)
     return new_code
 
+def _populate_order_product_names(orders_data, db: Session):
+    if not orders_data:
+        return
+    if isinstance(orders_data, list):
+        for o in orders_data:
+            _populate_single_order(o, db)
+    else:
+        _populate_single_order(orders_data, db)
+
+
+def _populate_single_order(o, db: Session):
+    products = o.products or []
+    if isinstance(products, list):
+        updated_products = []
+        for p in products:
+            if isinstance(p, dict):
+                p_copy = dict(p)
+                if not p_copy.get("name") and p_copy.get("productId"):
+                    prod = db.query(Product).filter(Product.id == p_copy["productId"]).first()
+                    if prod:
+                        p_copy["name"] = prod.name
+                updated_products.append(p_copy)
+            else:
+                updated_products.append(p)
+        o.products = updated_products
+
 
 @router.post("/", response_model=Order)
 def create_order(
@@ -68,13 +94,43 @@ def create_order(
                 detail=f"No puedes comprar tus propios productos: {product_names}"
             )
 
+    # 1. Validar stock de todos los productos antes de crear la orden
+    for item in order.products:
+        prod = db.query(Product).filter(Product.id == item.productId).first()
+        if not prod:
+            raise HTTPException(status_code=404, detail=f"Producto con ID {item.productId} no encontrado")
+        if prod.stock is not None:
+            if prod.stock < item.quantity:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Stock insuficiente para el producto '{prod.name}' (Disponible: {prod.stock}, Solicitado: {item.quantity})"
+                )
+
+    # 2. Descontar el stock de los productos
+    for item in order.products:
+        prod = db.query(Product).filter(Product.id == item.productId).first()
+        if prod and prod.stock is not None:
+            prod.stock -= item.quantity
+
+    # 3. Determinar si el pedido se confirma automáticamente
+    auto_confirm = True
+    if order.products:
+        first_product_id = order.products[0].productId
+        prod = db.query(Product).filter(Product.id == first_product_id).first()
+        if prod and prod.store_id:
+            store = db.query(Store).filter(Store.id == prod.store_id).first()
+            if store:
+                auto_confirm = store.auto_confirm_orders
+
+    initial_status = "confirmed" if auto_confirm else "pending"
+
     products_json = [item.dict() for item in order.products]
 
     db_order = OrderModel(
         user_id=user.id,
         products=products_json,
         total_amount=order.total_amount,
-        status="pending",
+        status=initial_status,
         shipping_address=order.shipping_address,
         contact_phone=order.contact_phone,
         shipping_latitude=order.shipping_latitude,
@@ -92,6 +148,7 @@ def create_order(
 
     # Adjuntar el código al response (campo virtual)
     db_order.delivery_code = delivery.code  # type: ignore[attr-defined]
+    _populate_order_product_names(db_order, db)
     return db_order
 
 
@@ -116,6 +173,7 @@ def get_user_orders(
         o.client_name = o.user.name if o.user else None  # type: ignore[attr-defined]
         o.client_email = o.user.email if o.user else None  # type: ignore[attr-defined]
 
+    _populate_order_product_names(orders, db)
     return orders
 
 
@@ -160,6 +218,7 @@ def get_order(
         
     order.client_name = order.user.name if order.user else None  # type: ignore[attr-defined]
     order.client_email = order.user.email if order.user else None  # type: ignore[attr-defined]
+    _populate_order_product_names(order, db)
     return order
 
 
@@ -190,6 +249,7 @@ def update_order_status(
     order.delivery_code = dc.code if dc else None  # type: ignore[attr-defined]
     order.client_name = order.user.name if order.user else None  # type: ignore[attr-defined]
     order.client_email = order.user.email if order.user else None  # type: ignore[attr-defined]
+    _populate_order_product_names(order, db)
     return order
 
 
@@ -209,6 +269,19 @@ def cancel_order(
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     if order.user_id != user.id:
         raise HTTPException(status_code=403, detail="Sin acceso a esta orden")
+
+    if order.status in ("canceled", "completed"):
+        raise HTTPException(status_code=400, detail="No se puede cancelar un pedido ya finalizado o cancelado")
+
+    # Restaurar stock
+    products_in_order = order.products or []
+    for item in products_in_order:
+        p_id = item.get("productId")
+        qty = item.get("quantity")
+        if p_id and qty:
+            prod = db.query(Product).filter(Product.id == p_id).first()
+            if prod and prod.stock is not None:
+                prod.stock += qty
 
     order.status = "canceled"
     order.updated_at = datetime.utcnow()

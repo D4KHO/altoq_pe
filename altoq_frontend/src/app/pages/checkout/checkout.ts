@@ -104,30 +104,62 @@ export class CheckoutComponent implements OnInit {
           },
           error: () => {} // Silently fail if no addresses
         });
+
+        // Check for saved card in localStorage (scoped to user)
+        if (user.email) {
+          const cardKey = `saved_card_${user.email}`;
+          const savedCardRaw = localStorage.getItem(cardKey);
+          if (savedCardRaw) {
+            try {
+              const savedCard = JSON.parse(savedCardRaw);
+              if (savedCard && savedCard.number) {
+                this.cardNumber = savedCard.number;
+                this.cardholderName = savedCard.holder || '';
+                this.expiryDate = savedCard.expiry || '';
+                this.cvv = savedCard.cvv || '';
+                this.rememberCard = true;
+                this.hasSavedCard = true;
+                
+                // Detect card type
+                const rawNum = this.cardNumber.replace(/\D/g, '');
+                this.detectCardType(rawNum);
+              }
+            } catch (e) {
+              console.error('Error loading saved card', e);
+            }
+          } else {
+            // Reset card fields if no card is saved for this user
+            this.cardNumber = '';
+            this.cardholderName = '';
+            this.expiryDate = '';
+            this.cvv = '';
+            this.rememberCard = false;
+            this.hasSavedCard = false;
+            this.cardType = 'generic';
+          }
+        } else {
+          this.cardNumber = '';
+          this.cardholderName = '';
+          this.expiryDate = '';
+          this.cvv = '';
+          this.rememberCard = false;
+          this.hasSavedCard = false;
+          this.cardType = 'generic';
+        }
+      } else {
+        // If user is null (logged out), reset recipient info and card details
+        this.recipientName = '';
+        this.recipientEmail = '';
+        this.recipientPhone = '';
+        this.cardNumber = '';
+        this.cardholderName = '';
+        this.expiryDate = '';
+        this.cvv = '';
+        this.rememberCard = false;
+        this.hasSavedCard = false;
+        this.cardType = 'generic';
       }
     });
-
-    // Check for saved card in localStorage
-    const savedCardRaw = localStorage.getItem('saved_card');
-    if (savedCardRaw) {
-      try {
-        const savedCard = JSON.parse(savedCardRaw);
-        if (savedCard && savedCard.number) {
-          this.cardNumber = savedCard.number;
-          this.cardholderName = savedCard.holder || '';
-          this.expiryDate = savedCard.expiry || '';
-          this.cvv = savedCard.cvv || '';
-          this.rememberCard = true;
-          this.hasSavedCard = true;
-          
-          // Detect card type
-          const rawNum = this.cardNumber.replace(/\D/g, '');
-          this.detectCardType(rawNum);
-        }
-      } catch (e) {
-        console.error('Error loading saved card', e);
-      }
-    }
   }
 
   // ── Card formatting helpers ────────────────────────
@@ -360,6 +392,7 @@ export class CheckoutComponent implements OnInit {
             user_id: user?.id ?? 1,
             products: this.cart.items.map(item => ({
               productId: item.productId,
+              name: item.name,
               quantity: item.quantity,
               price: item.price
             })),
@@ -373,18 +406,21 @@ export class CheckoutComponent implements OnInit {
 
           this.orderService.createOrder(order).subscribe({
             next: (createdOrder) => {
-              // Persist or clear card details based on user preference
-              if (this.rememberCard) {
-                localStorage.setItem('saved_card', JSON.stringify({
-                  number: this.cardNumber,
-                  holder: this.cardholderName,
-                  expiry: this.expiryDate,
-                  cvv: this.cvv
-                }));
-                this.hasSavedCard = true;
-              } else {
-                localStorage.removeItem('saved_card');
-                this.hasSavedCard = false;
+              // Persist or clear card details based on user preference (scoped to user)
+              if (user && user.email) {
+                const cardKey = `saved_card_${user.email}`;
+                if (this.rememberCard) {
+                  localStorage.setItem(cardKey, JSON.stringify({
+                    number: this.cardNumber,
+                    holder: this.cardholderName,
+                    expiry: this.expiryDate,
+                    cvv: this.cvv
+                  }));
+                  this.hasSavedCard = true;
+                } else {
+                  localStorage.removeItem(cardKey);
+                  this.hasSavedCard = false;
+                }
               }
 
               this.totalPaid = this.cart.totalPrice;
@@ -397,7 +433,7 @@ export class CheckoutComponent implements OnInit {
             },
             error: (err) => {
               console.error('Error al crear orden:', err);
-              this.paymentError = 'Error al registrar la orden. El pago fue simulado pero intenta de nuevo.';
+              this.paymentError = err.error?.detail || 'Error al registrar la orden. El pago fue simulado pero intenta de nuevo.';
               this.processing = false;
               this.paymentPhase = '';
             }
@@ -422,6 +458,11 @@ export class CheckoutComponent implements OnInit {
   }
 
   clearSavedCard(): void {
+    const user = this.authService.userValue;
+    if (user && user.email) {
+      const cardKey = `saved_card_${user.email}`;
+      localStorage.removeItem(cardKey);
+    }
     localStorage.removeItem('saved_card');
     this.cardNumber = '';
     this.cardholderName = '';

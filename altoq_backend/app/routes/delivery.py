@@ -284,6 +284,9 @@ def track_delivery_public(
     if not order:
         raise HTTPException(status_code=404, detail="Seguimiento de entrega no encontrado o token inválido")
 
+    from .orders import _populate_order_product_names
+    _populate_order_product_names(order, db)
+
     # Encontrar nombre de la tienda del vendedor
     products_in_order = order.products or []
     product_ids = [p.get("productId") for p in products_in_order if p.get("productId")]

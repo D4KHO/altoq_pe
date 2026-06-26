@@ -65,10 +65,29 @@ export class CartService {
     const currentCart = this.cart.value;
     const existingItem = currentCart.items.find(i => i.productId === item.productId);
 
-    if (existingItem) {
-      existingItem.quantity += item.quantity;
+    const totalStock = item.stock !== undefined ? item.stock : 999999;
+    const newQty = existingItem ? existingItem.quantity + item.quantity : item.quantity;
+
+    if (newQty > totalStock) {
+      const allowedAdd = totalStock - (existingItem ? existingItem.quantity : 0);
+      if (allowedAdd <= 0) {
+        this.toastService.show(`No puedes agregar más unidades. El stock máximo disponible es de ${totalStock} unidades.`, 'error');
+        return;
+      } else {
+        if (existingItem) {
+          existingItem.quantity = totalStock;
+        } else {
+          item.quantity = totalStock;
+          currentCart.items.push(item);
+        }
+        this.toastService.show(`Solo se agregaron ${allowedAdd} unidades adicionales (llegaste al límite de stock de ${totalStock}).`, 'info');
+      }
     } else {
-      currentCart.items.push(item);
+      if (existingItem) {
+        existingItem.quantity = newQty;
+      } else {
+        currentCart.items.push(item);
+      }
     }
     this.updateCart(currentCart);
     this.cartModalState.next({ show: true, item: item });
@@ -85,7 +104,14 @@ export class CartService {
     const item = currentCart.items.find(i => i.productId === productId);
 
     if (item) {
-      item.quantity = quantity;
+      const totalStock = item.stock !== undefined ? item.stock : 999999;
+      if (quantity > totalStock) {
+        this.toastService.show(`El stock máximo disponible de este producto es de ${totalStock} unidades.`, 'error');
+        item.quantity = totalStock;
+      } else {
+        item.quantity = quantity;
+      }
+
       if (item.quantity <= 0) {
         this.removeFromCart(productId);
       } else {
