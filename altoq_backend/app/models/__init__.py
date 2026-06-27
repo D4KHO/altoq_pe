@@ -8,6 +8,7 @@ from ..database import Base  # noqa: F401
 from .admin import Admin
 from .user import User
 from .category import Category
+from .password_reset import PasswordResetCode
 
 # Entidades que dependen de las anteriores
 from .store import Store
@@ -30,6 +31,7 @@ __all__ = [
     "Admin",
     "User",
     "Category",
+    "PasswordResetCode",
     "Store",
     "Address",
     "Product",
