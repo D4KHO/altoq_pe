@@ -1,0 +1,55 @@
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-slate-800">Panel de Métricas y Analíticas</h2>
+    <div class="flex gap-2">
+      <button (click)="changePeriod(7)" [class.bg-blue-600]="daysPeriod === 7" class="px-4 py-2 bg-slate-200 text-sm font-medium rounded-lg hover:bg-slate-300">7 Días</button>
+      <button (click)="changePeriod(30)" [class.bg-blue-600]="daysPeriod === 30" class="px-4 py-2 bg-slate-200 text-sm font-medium rounded-lg hover:bg-slate-300">30 Días</button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="text-center py-12">
+    <span class="text-slate-500">Cargando métricas de la plataforma...</span>
+  </div>
+
+  <div *ngIf="!isLoading && summary">
+    <!-- Grid de KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-xl shadow">
+        <p class="text-xs text-slate-500 font-semibold uppercase">Ventas Totales</p>
+        <p class="text-2xl font-bold text-blue-900">{{ summary.total_revenue | currency:'S/ ' }}</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow">
+        <p class="text-xs text-slate-500 font-semibold uppercase">Órdenes Totales</p>
+        <p class="text-2xl font-bold text-slate-800">{{ summary.total_orders }}</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow">
+        <p class="text-xs text-slate-500 font-semibold uppercase">Usuarios Totales</p>
+        <p class="text-2xl font-bold text-slate-800">{{ summary.total_users }} ({{ summary.total_sellers }} vend. / {{ summary.total_buyers }} comp.)</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow">
+        <p class="text-xs text-slate-500 font-semibold uppercase">Tiendas Registradas</p>
+        <p class="text-2xl font-bold text-slate-800">{{ summary.total_stores }} ({{ summary.active_stores }} act. / {{ summary.pending_stores }} pend.)</p>
+      </div>
+    </div>
+
+    <!-- Otros datos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h3 class="text-lg font-bold text-slate-800 mb-2">Top 5 Tiendas</h3>
+        <ul>
+          <li *ngFor="let store of rankings" class="py-2 border-b border-slate-100 flex justify-between">
+            <span>{{ store.name }}</span>
+            <span class="font-bold text-blue-900">{{ store.revenue | currency:'S/ ' }}</span>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h3 class="text-lg font-bold text-slate-800 mb-2">Interacciones y Tráfico</h3>
+        <p class="mb-1">Visitas en Tiendas: <strong>{{ summary.total_visits }}</strong></p>
+        <p class="mb-1">Chats Iniciados: <strong>{{ summary.total_chats }}</strong></p>
+        <p class="mb-1">Uso de Plantillas: <strong>{{ summary.total_templates }}</strong></p>
+      </div>
+    </div>
+  </div>
+</div>

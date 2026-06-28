@@ -127,7 +127,7 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./pages/admin/users/users').then((m) => m.Users), // Temporary: show users on dashboard
+          import('./pages/admin/metrics-dashboard/metrics-dashboard').then((m) => m.MetricsDashboard),
       },
       {
         path: 'users',
