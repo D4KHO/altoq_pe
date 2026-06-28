@@ -1,1 +1,93 @@
 /* Estilos locales para el panel de métricas del administrador */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Transición suave para las tarjetas */
+.bg-white {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bg-white:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+}
+
+/* Animación sutil de pulso para la alerta */
+.animate-pulse-subtle {
+  animation: pulseSubtle 3s infinite ease-in-out;
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.93;
+    transform: scale(0.995);
+  }
+}
+
+/* Estilos de gráficos SVG */
+svg {
+  width: 100%;
+  display: block;
+}
+
+circle {
+  transition: r 0.2s ease-in-out, fill 0.2s ease-in-out, stroke 0.2s ease-in-out;
+}
+
+circle:hover {
+  r: 7 !important;
+  fill: #ffffff !important;
+}
+
+/* Asegurar que las líneas del gráfico destaquen */
+path {
+  filter: drop-shadow(0px 3px 4px rgba(59, 130, 246, 0.15));
+}
+
+/* Tablas estilizadas */
+table th {
+  letter-spacing: 0.05em;
+}
+
+table tr {
+  transition: background-color 0.15s ease;
+}
+
+/* Tooltip absoluto */
+.absolute {
+  position: absolute;
+}
+
+/* Custom badges */
+.bg-emerald-100 {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.bg-amber-100 {
+  background-color: #fffbeb;
+  color: #b45309;
+}
+
+.bg-red-100 {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Degradados para KPIs */
+.bg-gradient-to-r {
+  background-size: 200% auto;
+  transition: background-position 0.5s ease;
+}
+
+.bg-gradient-to-r:hover {
+  background-position: right center;
+}
