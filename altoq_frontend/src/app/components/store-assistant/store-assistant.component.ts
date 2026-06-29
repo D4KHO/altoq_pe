@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { SellerService } from '../../services/seller.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { MarkdownFormatPipe } from '../../pipes/markdown-format.pipe';
 
 @Component({
   selector: 'app-store-assistant',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MarkdownFormatPipe],
   templateUrl: './store-assistant.component.html',
   styleUrls: ['./store-assistant.component.css']
 })

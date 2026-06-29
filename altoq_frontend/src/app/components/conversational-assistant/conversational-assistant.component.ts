@@ -2,11 +2,12 @@ import { Component, OnInit, Output, EventEmitter, Input, ViewChild, ElementRef }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SellerService } from '../../services/seller.service';
+import { MarkdownFormatPipe } from '../../pipes/markdown-format.pipe';
 
 @Component({
   selector: 'app-conversational-assistant',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MarkdownFormatPipe],
   templateUrl: './conversational-assistant.component.html',
   styleUrls: ['./conversational-assistant.component.css']
 })
