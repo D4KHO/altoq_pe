@@ -103,4 +103,10 @@ export class SellerService {
       headers: this.getHeaders()
     });
   }
+
+  uploadTempImage(formData: FormData): Observable<any> {
+    const params = this.getParams();
+    return this.http.post(`${this.apiUrl}/upload-temp-image`, formData, { params });
+  }
 }
+

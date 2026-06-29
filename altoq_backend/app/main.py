@@ -59,6 +59,12 @@ app.include_router(ai_product_assistant.router)
 app.include_router(metrics.router)
 app.include_router(stores.router)
 
+from fastapi.staticfiles import StaticFiles
+import os
+
+os.makedirs("static/uploads/products", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.get("/")
 def root():
     return {"message": "ALTOQ API - Bienvenido al backend del marketplace"}

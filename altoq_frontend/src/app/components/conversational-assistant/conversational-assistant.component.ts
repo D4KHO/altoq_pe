@@ -17,6 +17,12 @@ export class ConversationalAssistantComponent implements OnInit {
   isTyping: boolean = false;
   isCreatingProduct: boolean = false;
 
+  createdProductId: number | null = null;
+  awaitingImage: boolean = false;
+  imageInputMode: 'choice' | 'upload' | 'url' = 'choice';
+  inputImageUrl: string = '';
+  isUploading: boolean = false;
+
   @Input() storeId: number | null = null;
   @Input() storeName: string = '';
   @Output() productCreatedEvent = new EventEmitter<void>();
@@ -54,13 +60,21 @@ export class ConversationalAssistantComponent implements OnInit {
         this.isCreatingProduct = false;
         
         if (response.reply) {
-          this.addMessage('assistant', response.reply);
+          let replyText = response.reply;
+          if (replyText.includes('[REQUEST_IMAGE]')) {
+            replyText = replyText.replace('[REQUEST_IMAGE]', '').trim();
+            this.awaitingImage = true;
+            this.imageInputMode = 'choice';
+          }
+          if (replyText) {
+            this.addMessage('assistant', replyText);
+          }
         }
 
         if (response.product_created) {
-          setTimeout(() => {
-            this.productCreatedEvent.emit();
-          }, 2000);
+          this.finishProductCreation();
+        } else {
+          this.scrollToBottom();
         }
       },
       error: (err) => {
@@ -73,7 +87,69 @@ export class ConversationalAssistantComponent implements OnInit {
   }
 
   resetConversation(): void {
+    this.awaitingImage = false;
+    this.createdProductId = null;
+    this.imageInputMode = 'choice';
+    this.inputImageUrl = '';
+    this.isUploading = false;
     this.startConversation();
+  }
+
+  selectUploadMode(): void {
+    this.imageInputMode = 'upload';
+    this.scrollToBottom();
+  }
+
+  selectUrlMode(): void {
+    this.imageInputMode = 'url';
+    this.scrollToBottom();
+  }
+
+  cancelImageStep(): void {
+    this.awaitingImage = false;
+    this.handleUserInput('Quiero omitir la imagen. Usa la imagen por defecto.');
+  }
+
+  onFileSelected(event: any): void {
+    const file: File = event.target.files[0];
+    if (!file) return;
+
+    this.isUploading = true;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.sellerService.uploadTempImage(formData).subscribe({
+      next: (res) => {
+        this.isUploading = false;
+        this.awaitingImage = false;
+        this.handleUserInput(`He subido esta imagen:\n![Imagen del Producto](${res.image_url})`);
+      },
+      error: (err) => {
+        console.error('Error uploading image', err);
+        this.isUploading = false;
+        this.addMessage('assistant', 'Hubo un error al subir la imagen. Por favor, intenta de nuevo o prueba con una URL.');
+        this.imageInputMode = 'choice';
+      }
+    });
+  }
+
+  saveImageUrl(): void {
+    if (!this.inputImageUrl.trim()) return;
+
+    const url = this.inputImageUrl;
+    this.isUploading = false;
+    this.awaitingImage = false;
+    this.inputImageUrl = '';
+    
+    this.handleUserInput(`He subido esta imagen:\n![Imagen del Producto](${url})`);
+  }
+
+  finishProductCreation(): void {
+    this.awaitingImage = false;
+    this.addMessage('assistant', '¡El producto ha sido publicado exitosamente en tu tienda! Redirigiendo...');
+    setTimeout(() => {
+      this.productCreatedEvent.emit();
+    }, 2500);
   }
 
   private scrollToBottom(): void {

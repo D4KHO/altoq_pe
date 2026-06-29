@@ -34,6 +34,7 @@ class ProductChatPayload(BaseModel):
 class ProductChatResponse(BaseModel):
     reply: str
     product_created: bool
+    product_id: Optional[int] = None
 
 CREATE_PRODUCT_TOOL = {
     "function_declarations": [
@@ -83,7 +84,8 @@ def _create_product_in_db(
     name: str,
     price: float,
     description: str,
-    category: str
+    category: str,
+    image_url: str
 ) -> Product:
     # Verify user has a store
     store = db.query(Store).filter(Store.user_id == user.id).first()
@@ -105,7 +107,7 @@ def _create_product_in_db(
         store_id=store.id,
         store_name=store.name,
         stock=1,
-        image="https://placehold.co/300x200?text=Nuevo+Producto"
+        image=image_url
     )
     db.add(new_product)
     db.commit()
@@ -140,7 +142,7 @@ def chat_with_product_assistant(
     dynamic_instruction = (
         "Eres el asistente de IA para crear productos en ALTOQ. "
         "Tu objetivo es ayudar al usuario a publicar un nuevo producto en su tienda. "
-        "Pregunta amigablemente uno por uno los siguientes datos:\n"
+        "Pregunta amigablemente uno por uno los siguientes datos si faltan:\n"
         "1. Nombre del producto\n"
         "2. Precio (en Soles)\n"
         "3. Descripción detallada\n"
@@ -148,10 +150,13 @@ def chat_with_product_assistant(
         "Reglas:\n"
         "- Saluda y pregunta qué quieren vender.\n"
         "- Pide solo un dato a la vez si falta alguno.\n"
-        f"- IMPORTANTE: No permitas que el usuario invente categorías. El producto SOLO puede pertenecer a una de estas categorías existentes: {allowed_categories}.\n"
-        "- Si el usuario da una categoría o producto que no se ajusta, muéstrale la lista de categorías disponibles y pídele que elija una.\n"
-        "- Una vez que tengas los 4 datos obligatorios, muestra un resumen y pregunta si desean confirmar la publicación.\n"
-        "- Si el usuario dice 'sí' o confirma, llama a la función `create_product`.\n"
+        f"- IMPORTANTE: La categoría SOLO puede ser una de: {allowed_categories}.\n"
+        "- Si el usuario da una categoría inválida, muéstrale la lista.\n"
+        "- Una vez que tengas los 4 datos (Nombre, Precio, Descripción, Categoría), pero falte la imagen, "
+        "DEBES incluir exactamente la palabra '[REQUEST_IMAGE]' en tu respuesta y pedirle al usuario que suba una imagen de su producto usando los botones en pantalla.\n"
+        "- Cuando el usuario haya proporcionado la imagen (el sistema enviará un mensaje indicando que se subió la imagen), "
+        "muestra un resumen completo (incluyendo que ya tienes la imagen) y pregunta si desean confirmar la publicación.\n"
+        "- Si el usuario confirma, llama a la función `create_product` incluyendo la URL de la imagen.\n"
         "- Responde siempre en español y sé conciso."
     )
 
@@ -174,8 +179,12 @@ def chat_with_product_assistant(
                             "type": "string", 
                             "description": f"Categoría del producto. Debe ser exactamente una de: {allowed_categories}"
                         },
+                        "image_url": {
+                            "type": "string",
+                            "description": "La URL de la imagen que el usuario subió."
+                        }
                     },
-                    "required": ["name", "price", "description", "category"],
+                    "required": ["name", "price", "description", "category", "image_url"],
                 },
             }
         ]
@@ -223,9 +232,11 @@ def chat_with_product_assistant(
                             name=args.get("name", ""),
                             price=float(args.get("price", 0.0)),
                             description=args.get("description", ""),
-                            category=args.get("category", "General")
+                            category=args.get("category", "General"),
+                            image_url=args.get("image_url", "https://placehold.co/300x200?text=Nuevo+Producto")
                         )
                         product_created = True
+                        product_id = new_prod.id
 
                         func_response = genai.protos.Part(
                             function_response=genai.protos.FunctionResponse(
@@ -248,4 +259,8 @@ def chat_with_product_assistant(
     if not reply_text:
         reply_text = "Procesado."
 
-    return ProductChatResponse(reply=reply_text, product_created=product_created)
+    return ProductChatResponse(
+        reply=reply_text, 
+        product_created=product_created, 
+        product_id=product_id if product_created else None
+    )

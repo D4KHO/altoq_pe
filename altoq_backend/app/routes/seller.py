@@ -266,3 +266,39 @@ def confirm_seller_order(
     _populate_order_product_names(order, db)
     return order
 
+import uuid
+import shutil
+import os
+from fastapi import File, UploadFile, Request
+from pydantic import BaseModel
+
+@router.post("/upload-temp-image")
+def upload_temp_image(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == current_user_email).first()
+    store = db.query(Store).filter(Store.user_id == user.id).first()
+    
+    if not store:
+        raise HTTPException(status_code=404, detail="No tienes una tienda registrada")
+
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen válida")
+
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"temp_{store.id}_{uuid.uuid4().hex}{file_extension}"
+    file_path = f"static/uploads/products/{unique_filename}"
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    base_url = str(request.base_url).rstrip("/")
+    public_url = f"{base_url}/static/uploads/products/{unique_filename}"
+    return {"message": "Imagen subida exitosamente", "image_url": public_url}
+
+
+
+

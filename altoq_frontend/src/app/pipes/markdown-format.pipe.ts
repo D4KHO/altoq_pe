@@ -11,8 +11,11 @@ export class MarkdownFormatPipe implements PipeTransform {
   transform(value: string): SafeHtml {
     if (!value) return '';
     
+    // Reemplazar imágenes de Markdown: ![alt](url)
+    let formatted = value.replace(/!\[(.*?)\]\((.*?)\)/g, '<div class="mt-2 mb-2"><img src="$2" alt="$1" class="rounded-xl max-h-48 object-cover border border-gray-200 shadow-sm" /></div>');
+    
     // Reemplazar **texto** por <strong>texto</strong>
-    let formatted = value.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
     // Convertir listas con asterisco o guión (ej. * Item) a viñetas (• Item)
     formatted = formatted.replace(/(^|\n)\s*[\*\-]\s+/g, '$1• ');
