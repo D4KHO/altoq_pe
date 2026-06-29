@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 from ..database import get_db
 from ..models.user import User
+from ..models.product import Product
+from ..models.store import Store
+from ..models.chat import Chat
 from ..schemas.user import UserResponse
 from ..utils.security import verify_token
 
@@ -56,7 +60,7 @@ def delete_user(
     admin: dict = Depends(verify_admin),
     db: Session = Depends(get_db)
 ):
-    """Delete a user (admin only)"""
+    """Delete a user, their stores and products safely (admin only)"""
     user = db.query(User).filter(User.id == user_id).first()
     
     if not user:
@@ -65,7 +69,29 @@ def delete_user(
             detail="User not found"
         )
     
-    db.delete(user)
-    db.commit()
+    try:
+        # 1. Eliminar primero de forma ordenada las tiendas y sus productos
+        for store in user.stores:
+            # Eliminar todos los productos de esta tienda primero
+            db.query(Product).filter(Product.store_id == store.id).delete()
+            # Eliminar la tienda
+            db.delete(store)
+        
+        # 2. Eliminar chats donde este usuario participe como comprador o vendedor
+        db.query(Chat).filter(
+            (Chat.buyer_id == user.id) | (Chat.seller_id == user.id)
+        ).delete(synchronize_session=False)
+
+        # 3. Eliminar al usuario físico (las direcciones 'Address' se eliminan en cascada)
+        db.delete(user)
+        db.commit()
+        
+    except IntegrityError:
+        db.rollback()
+        # Si arroja IntegrityError es porque el usuario tiene compras/pedidos registrados (Order.user_id no nullable)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede eliminar físicamente al usuario porque tiene un historial de pedidos asociados. Por favor, suspenda su cuenta o su tienda en su lugar para desactivarlo."
+        )
     
     return {"message": f"User {user_id} deleted successfully"}

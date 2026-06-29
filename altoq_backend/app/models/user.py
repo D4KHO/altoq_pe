@@ -23,7 +23,7 @@ class User(Base):
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     address: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=datetime.utcnow)
     role: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="buyer")
 
     # Relationships

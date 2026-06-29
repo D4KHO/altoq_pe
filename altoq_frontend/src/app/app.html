@@ -1,4 +1,6 @@
-<app-navbar></app-navbar>
+@if (showNavbar()) {
+  <app-navbar></app-navbar>
+}
 <router-outlet />
 <app-toast></app-toast>
 <app-cart-added-modal></app-cart-added-modal>
