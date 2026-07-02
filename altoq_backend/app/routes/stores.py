@@ -10,6 +10,13 @@ from ..schemas.product import ProductResponse as Product
 router = APIRouter(prefix="/api/stores", tags=["stores"])
 
 
+@router.get("", response_model=List[StorePublicResponse])
+def get_all_public_stores(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Obtener lista de todas las tiendas activas (público)"""
+    stores = db.query(Store).filter(Store.status == "active").offset(skip).limit(limit).all()
+    return stores
+
+
 @router.get("/{store_id}", response_model=StorePublicResponse)
 def get_public_store(store_id: int, db: Session = Depends(get_db)):
     """Obtener información pública de una tienda por ID (sin autenticación)"""

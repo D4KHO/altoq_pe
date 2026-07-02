@@ -16,7 +16,7 @@ class ChatResponse(BaseModel):
     id: int
     buyer_id: int
     seller_id: int
-    product_id: int
+    product_id: Optional[int] = None
     order_id: Optional[int]
     is_active: Optional[bool] = True
     created_at: Optional[datetime] = None

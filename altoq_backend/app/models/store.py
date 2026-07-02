@@ -41,3 +41,5 @@ class Store(Base):
     user: Mapped[Optional["User"]] = relationship("User", back_populates="stores")
     products: Mapped[List["Product"]] = relationship("Product", back_populates="store")
     metrics: Mapped[List["StoreMetric"]] = relationship("StoreMetric", back_populates="store")
+    inquiries: Mapped[List["StoreInquiry"]] = relationship("StoreInquiry", back_populates="store", cascade="all, delete-orphan")
+

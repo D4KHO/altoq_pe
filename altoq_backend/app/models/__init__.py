@@ -26,6 +26,9 @@ from .template import ProductTemplate, TemplateField
 # Métricas
 from .store_metric import StoreMetric
 
+# Consultas de tienda
+from .inquiry import StoreInquiry
+
 __all__ = [
     "Base",
     "Admin",
@@ -42,4 +45,5 @@ __all__ = [
     "ProductTemplate",
     "TemplateField",
     "StoreMetric",
+    "StoreInquiry",
 ]

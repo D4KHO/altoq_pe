@@ -29,9 +29,9 @@ class Chat(Base):
         ForeignKey("users.id", name="chats_ibfk_2"),
         nullable=False,
     )
-    product_id: Mapped[int] = mapped_column(
+    product_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("products.id", name="chats_ibfk_3"),
-        nullable=False,
+        nullable=True,
     )
     order_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("orders.id", name="chats_ibfk_4"),
@@ -44,7 +44,7 @@ class Chat(Base):
     # Relationships
     buyer: Mapped["User"] = relationship("User", foreign_keys=[buyer_id], back_populates="chats_as_buyer")
     seller: Mapped["User"] = relationship("User", foreign_keys=[seller_id], back_populates="chats_as_seller")
-    product: Mapped["Product"] = relationship("Product", back_populates="chats")
+    product: Mapped[Optional["Product"]] = relationship("Product", back_populates="chats")
     order: Mapped[Optional["Order"]] = relationship("Order", back_populates="chats")
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="chat", cascade="all, delete-orphan")
 

@@ -254,3 +254,78 @@ def close_chat(
     db.commit()
     
     return {"message": "Chat cerrado exitosamente"}
+
+from pydantic import BaseModel
+from typing import Optional
+
+class ChatInquiryCreate(BaseModel):
+    store_id: int
+    name: str
+    email: str
+    phone: Optional[str] = None
+    message: str
+
+@router.post("/inquiry")
+def create_store_inquiry(
+    inquiry_data: ChatInquiryCreate,
+    db: Session = Depends(get_db)
+):
+    """Crear un chat de consulta general para una tienda desde el formulario de contacto"""
+    from ..models.store import Store
+    from ..models.user import User as UserModel
+    from datetime import datetime
+    import hashlib
+
+    # 1. Obtener la tienda y el vendedor
+    store = db.query(Store).filter(Store.id == inquiry_data.store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Tienda no encontrada")
+    
+    seller_id = store.user_id
+    if not seller_id:
+        raise HTTPException(status_code=400, detail="La tienda no tiene un vendedor asignado")
+
+    # 2. Buscar o crear el usuario comprador (usando el email)
+    buyer = db.query(UserModel).filter(UserModel.email == inquiry_data.email).first()
+    if not buyer:
+        # Si no existe, crear un usuario temporal
+        temp_password_hash = hashlib.sha256(b"guest12345").hexdigest()
+        buyer = UserModel(
+            email=inquiry_data.email,
+            name=inquiry_data.name,
+            password=temp_password_hash,
+            phone=inquiry_data.phone,
+            role="buyer"
+        )
+        db.add(buyer)
+        db.commit()
+        db.refresh(buyer)
+
+    # 3. Crear el chat
+    new_chat = Chat(
+        buyer_id=buyer.id,
+        seller_id=seller_id,
+        product_id=None,  # No está asociado a un producto específico
+        order_id=None,    # No está asociado a un pedido
+        is_active=True,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    db.add(new_chat)
+    db.commit()
+    db.refresh(new_chat)
+
+    # 4. Crear el primer mensaje en el chat
+    new_message = Message(
+        chat_id=new_chat.id,
+        sender_id=buyer.id,
+        content=inquiry_data.message,
+        is_read=False,
+        created_at=datetime.utcnow()
+    )
+    db.add(new_message)
+    db.commit()
+    db.refresh(new_message)
+
+    return {"message": "Consulta enviada exitosamente", "chat_id": new_chat.id}
+
