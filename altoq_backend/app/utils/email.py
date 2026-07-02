@@ -1,26 +1,16 @@
 import os
-import base64
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
+import requests
+from ..config import settings
 
 
 def send_recovery_email(email: str, code: str) -> bool:
     """
-    Sends a recovery email with a 6-digit code using the Gmail HTTP API.
-    Requires the following environment variables:
-      * GMAIL_CLIENT_ID
-      * GMAIL_CLIENT_SECRET
-      * GMAIL_REFRESH_TOKEN
-      * GMAIL_USER (the Gmail address sending the mail, e.g. altoqweb@gmail.com)
-    If any of them are missing, it falls back to printing the code for local development.
+    Sends a recovery email with a 6-digit code using the Resend API.
+    If credentials are missing, it falls back to printing the code for local development.
     """
-    # Load Gmail OAuth credentials from the environment
-    client_id = os.getenv("GMAIL_CLIENT_ID")
-    client_secret = os.getenv("GMAIL_CLIENT_SECRET")
-    refresh_token = os.getenv("GMAIL_REFRESH_TOKEN")
-    gmail_user = os.getenv("GMAIL_USER")
+    # Load Resend credentials from settings
+    api_key = settings.resend_api_key
+    email_from = settings.email_from
 
     # Build the HTML email body
     subject = "Código de recuperación de contraseña - AltoQ"
@@ -70,44 +60,46 @@ def send_recovery_email(email: str, code: str) -> bool:
     """
 
     # If any credential is missing, fallback to development print
-    if not (client_id and client_secret and refresh_token and gmail_user):
+    if not api_key:
         print("\n" + "="*80)
-        print("  [ALTOQ DEVELOPMENT] CODIGO DE RECUPERACION DE CONTRASEÑA")
+        print("  [ALTOQ DEVELOPMENT] CODIGO DE RECUPERACION DE CONTRASEÑA (RESEND NO CONFIGURADO)")
         print(f"  Para el usuario: {email}")
         print(f"  El codigo es   : {code}")
         print("="*80 + "\n")
         return True
 
     try:
-        # Build OAuth2 credentials object
-        creds = Credentials(
-            token=None,
-            refresh_token=refresh_token,
-            token_uri='https://oauth2.googleapis.com/token',
-            client_id=client_id,
-            client_secret=client_secret,
-            scopes=['https://www.googleapis.com/auth/gmail.send']
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "from": email_from,
+            "to": [email],
+            "subject": subject,
+            "html": html_content
+        }
+
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers=headers,
+            json=payload,
+            timeout=10
         )
-        # Build Gmail service
-        service = build('gmail', 'v1', credentials=creds)
 
-        # Create MIME email
-        message = MIMEMultipart()
-        message['to'] = email
-        message['from'] = gmail_user
-        message['subject'] = subject
-        message.attach(MIMEText(html_content, 'html'))
-        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+        if response.status_code in (200, 201):
+            print("Correo de recuperación enviado con éxito vía Resend.")
+            return True
+        else:
+            print(f"Error al enviar correo vía Resend. Status: {response.status_code}, Response: {response.text}")
+            raise Exception(response.text)
 
-        # Send email via Gmail API
-        send_result = service.users().messages().send(userId='me', body={'raw': raw_message}).execute()
-        print(f"Gmail API send result: {send_result}")
-        return True
     except Exception as e:
-        print(f"Error sending recovery email via Gmail API: {e}")
-        # Development fallback
+        print(f"Excepción al enviar correo vía Resend: {e}")
+        # Fallback de desarrollo en caso de error de red o API
         print("\n" + "="*80)
-        print("  [ALTOQ FALLBACK / DEVELOPMENT] CODIGO DE RECUPERACION DE CONTRASEÑA (GMAIL ERROR)")
+        print("  [ALTOQ FALLBACK] CODIGO DE RECUPERACION (ERROR CONEXION RESEND)")
         print(f"  Para el usuario: {email}")
         print(f"  El codigo es   : {code}")
         print("="*80 + "\n")
