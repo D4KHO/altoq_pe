@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { Address, AddressCreate, UserUpdate, PasswordChange } from '../../models/user-profile';
@@ -46,7 +47,9 @@ export class ProfileComponent implements OnInit {
     private userService: UserService,
     private authService: AuthService,
     private mapboxService: MapboxService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {
     this.profileForm = this.fb.group({
       name: ['', Validators.required],
@@ -87,6 +90,17 @@ export class ProfileComponent implements OnInit {
 
     this.loadProfile();
     this.loadAddresses();
+
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'];
+      if (tab === 'favoritos') {
+        this.router.navigate(['/favoritos']);
+      } else if (tab === 'direcciones') {
+        this.setTab('addresses');
+      } else if (tab && ['profile', 'password', 'cards'].includes(tab)) {
+        this.setTab(tab as any);
+      }
+    });
   }
 
   passwordMatchValidator(g: FormGroup) {

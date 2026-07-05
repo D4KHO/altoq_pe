@@ -190,13 +190,13 @@
 					<div *ngIf="showCategoriesDropdown" (click)="closeCategoriesDropdown()" class="fixed inset-0 z-40 bg-transparent cursor-default"></div>
 				</div>
 
-				<a routerLink="/products" routerLinkActive="text-blue-600 font-bold border-b-2 border-blue-600"
+				<a routerLink="/products" [queryParams]="{sort: 'sold'}" routerLinkActive="text-blue-600 font-bold border-b-2 border-blue-600"
 					class="hover:text-blue-600 transition-all duration-150 py-2 px-1 text-slate-700">
 					Más vendidos
 				</a>
-				<a routerLink="/products" routerLinkActive="text-blue-600 font-bold border-b-2 border-blue-600"
+				<a routerLink="/favoritos" routerLinkActive="text-blue-600 font-bold border-b-2 border-blue-600"
 					class="hover:text-blue-600 transition-all duration-150 py-2 px-1 text-slate-700">
-					Nuevos
+					Mis favoritos
 				</a>
 				<a routerLink="/marcas" routerLinkActive="text-blue-600 font-bold border-b-2 border-blue-600"
 					class="hover:text-blue-600 transition-all duration-150 py-2 px-1 text-slate-700">

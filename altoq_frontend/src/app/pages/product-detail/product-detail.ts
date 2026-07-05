@@ -4,6 +4,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Product } from '../../models/product';
 import { ProductService } from '../../services/product.service';
 import { CartService } from '../../services/cart';
+import { FavoritesService } from '../../services/favorites.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -21,12 +23,17 @@ export class ProductDetailComponent implements OnInit {
   selectedColor: string | null = null;
   quantity: number = 1;
   showAllSpecs: boolean = false;
+  isFavorite: boolean = false;
+  relatedProducts: Product[] = [];
 
   constructor(
     private route: ActivatedRoute,
     private productService: ProductService,
     private cartService: CartService,
+    private favoritesService: FavoritesService,
+    private toastService: ToastService,
   ) {}
+
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -43,6 +50,7 @@ export class ProductDetailComponent implements OnInit {
         this.product = product;
         if (product) {
           this.selectedImage = product.image;
+          this.isFavorite = this.favoritesService.isFavorite(product.id);
           
           // TODO: Remove this test code once backend supports multiple images
           if (product.id === 1) {
@@ -62,6 +70,13 @@ export class ProductDetailComponent implements OnInit {
           if (this.product.colors && this.product.colors.length > 0) {
             this.selectedColor = this.product.colors[0];
           }
+
+          // Fetch related products
+          this.productService.getProducts().subscribe({
+            next: (products) => {
+              this.relatedProducts = products.filter(p => p.id !== id).slice(0, 5);
+            }
+          });
         }
         this.loading = false;
       },
@@ -70,6 +85,17 @@ export class ProductDetailComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  toggleFavorite(): void {
+    if (!this.product) return;
+    const added = this.favoritesService.toggle(this.product);
+    this.isFavorite = added;
+    if (added) {
+      this.toastService.show('Producto agregado a favoritos', 'success');
+    } else {
+      this.toastService.show('Producto eliminado de favoritos', 'info');
+    }
   }
 
   selectImage(image: string) {
@@ -99,6 +125,45 @@ export class ProductDetailComponent implements OnInit {
     }
     // Fallback: use main image if no gallery exists
     return this.product.image ? [this.product.image] : []; 
+  }
+
+  prevImage() {
+    const imgs = this.galleryImages;
+    if (imgs.length <= 1 || !this.selectedImage) return;
+    const idx = imgs.indexOf(this.selectedImage);
+    if (idx > 0) {
+      this.selectedImage = imgs[idx - 1];
+    } else {
+      this.selectedImage = imgs[imgs.length - 1];
+    }
+  }
+
+  nextImage() {
+    const imgs = this.galleryImages;
+    if (imgs.length <= 1 || !this.selectedImage) return;
+    const idx = imgs.indexOf(this.selectedImage);
+    if (idx < imgs.length - 1) {
+      this.selectedImage = imgs[idx + 1];
+    } else {
+      this.selectedImage = imgs[0];
+    }
+  }
+
+  getStarsFor(product: Product): number[] {
+    const stars = [];
+    let rating = product.rating || 0;
+    for (let i = 0; i < 5; i++) {
+        if (rating >= 1) {
+            stars.push(1);
+            rating--;
+        } else if (rating >= 0.5) {
+            stars.push(0.5);
+            rating = 0;
+        } else {
+            stars.push(0);
+        }
+    }
+    return stars;
   }
 
   addToCart(): void {
@@ -153,5 +218,17 @@ export class ProductDetailComponent implements OnInit {
   get hasMoreSpecs(): boolean {
     if (!this.product?.specifications) return false;
     return Object.keys(this.product.specifications).length > 4;
+  }
+
+  keyContains(key: string, term: string): boolean {
+    return key.toLowerCase().includes(term.toLowerCase());
+  }
+
+  isCustomSpec(key: string): boolean {
+    const k = key.toLowerCase();
+    return k.includes('material') || k.includes('lana') || k.includes('algodón') ||
+           k.includes('suela') || k.includes('antideslizante') || k.includes('seguridad') ||
+           k.includes('livian') || k.includes('comod') || k.includes('peso') || k.includes('diario') ||
+           k.includes('limpiar') || k.includes('lavar') || k.includes('resistente') || k.includes('limpio');
   }
 }
