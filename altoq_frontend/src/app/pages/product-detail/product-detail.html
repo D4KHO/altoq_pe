@@ -11,256 +11,396 @@
     </div>
     <div *ngIf="error" class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">{{ error }}</div>
 
-    <!-- Main Product Section -->
-    <div *ngIf="!loading && !error && product">
+    <!-- Main Content -->
+    <div *ngIf="!loading && !error && product" class="space-y-8">
+      
+      <!-- Breadcrumbs and Back link -->
+      <div class="flex items-center justify-between">
+        <a routerLink="/" class="flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Volver
+        </a>
+        
+        <nav class="flex items-center gap-1 text-[11px] text-slate-400 font-bold">
+          <a routerLink="/" class="text-[#0050d2] hover:underline">Inicio</a>
+          <span class="text-slate-355 font-normal mx-1.5">></span>
+          <a routerLink="/products" class="text-[#0050d2] hover:underline">{{ product.category || 'Calzado' }}</a>
+          <ng-container *ngIf="(product.category || '').toLowerCase().includes('calzado')">
+            <span class="text-slate-355 font-normal mx-1.5">></span>
+            <a routerLink="/products" class="text-[#0050d2] hover:underline">Pantuflas y zapatillas</a>
+          </ng-container>
+          <span class="text-slate-355 font-normal mx-1.5">></span>
+          <span class="text-slate-500 font-bold line-clamp-1">{{ product.name }}</span>
+        </nav>
+      </div>
 
-      <!-- Breadcrumb -->
-      <nav class="flex items-center gap-1.5 text-sm text-slate-500 mb-6">
-        <a routerLink="/" class="hover:text-[#0050d2] transition-colors">Inicio</a>
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        <span class="hover:text-[#0050d2] transition-colors">{{ product.category || 'Categoría' }}</span>
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        <span class="text-slate-700 font-medium line-clamp-1">{{ product.name }}</span>
-      </nav>
+      <!-- 3-Column Product Block -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Column 1: Images (col-span-5) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+          <div class="flex gap-4">
+            <!-- Vertical Thumbnails -->
+            <div *ngIf="galleryImages.length > 1" class="flex flex-col gap-3 shrink-0 overflow-y-auto max-h-[360px] md:max-h-[400px] scrollbar-hide">
+              <button *ngFor="let img of galleryImages"
+                (click)="selectImage(img)"
+                class="w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-150 cursor-pointer flex-shrink-0"
+                [class.border-blue-600]="selectedImage === img"
+                [class.border-slate-200]="selectedImage !== img"
+                [class.bg-slate-50]="selectedImage !== img">
+                <img [src]="img" [alt]="product.name" class="w-full h-full object-cover" />
+              </button>
+            </div>
 
-      <!-- Card wrapper -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div class="grid md:grid-cols-2 gap-0">
-
-          <!-- ===== LEFT: Images ===== -->
-          <div class="p-5 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-slate-100">
-
-            <!-- Main image with favorite -->
-            <div class="relative rounded-xl overflow-hidden bg-slate-50 aspect-square">
+            <!-- Main Image Container -->
+            <div class="relative rounded-2xl overflow-hidden bg-slate-50 flex-1 aspect-square flex items-center justify-center">
               <img *ngIf="selectedImage" [src]="selectedImage" [alt]="product.name"
-                class="w-full h-full object-contain transition-all duration-300" />
+                class="w-full h-full object-cover transition-all duration-300" />
               <div *ngIf="!selectedImage" class="flex w-full h-full items-center justify-center text-slate-300 text-sm">Sin imagen</div>
+              
+              <!-- Nuevo Badge -->
+              <span class="absolute top-4 left-4 z-10 bg-[#eab308] text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg shadow-sm">
+                Nuevo
+              </span>
 
-              <!-- Favorite button -->
+              <!-- Favorite Button -->
               <button (click)="toggleFavorite()"
-                class="absolute top-3 right-3 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-200 hover:scale-110 cursor-pointer"
-                [class.text-red-500]="isFavorite"
-                [class.text-slate-300]="!isFavorite">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5"
+                class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer text-slate-300 hover:text-red-400"
+                [class.!text-red-500]="isFavorite">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 transition-all duration-200"
                   [attr.fill]="isFavorite ? 'currentColor' : 'none'"
-                  stroke="currentColor" stroke-width="1.8">
+                  stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round"
                     d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                 </svg>
               </button>
 
-              <!-- Out of stock overlay -->
-              <div *ngIf="(product.stock || 0) <= 0"
-                class="absolute inset-0 bg-white/60 flex items-center justify-center">
-                <span class="bg-red-500 text-white text-sm font-bold px-4 py-2 rounded-full shadow">Agotado</span>
-              </div>
-            </div>
-
-            <!-- Thumbnail strip -->
-            <div class="flex items-center gap-2">
-              <button (click)="prevImage()" [disabled]="galleryImages.length <= 1"
-                class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all disabled:opacity-30 shrink-0 cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              <!-- Navigation Arrows -->
+              <button *ngIf="galleryImages.length > 1" (click)="prevImage()"
+                class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center text-slate-650 hover:text-blue-600 transition-all hover:scale-105 z-10 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <button *ngIf="galleryImages.length > 1" (click)="nextImage()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center text-slate-650 hover:text-blue-600 transition-all hover:scale-105 z-10 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
               </button>
 
-              <div class="flex gap-2 overflow-x-auto flex-1 scrollbar-hide">
-                <button *ngFor="let img of galleryImages"
-                  (click)="selectImage(img)"
-                  class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-150"
-                  [class.border-blue-500]="selectedImage === img"
-                  [class.border-slate-200]="selectedImage !== img">
-                  <img [src]="img" [alt]="product.name" class="w-full h-full object-cover" />
-                </button>
-              </div>
+              <!-- Image Index Badge -->
+              <span *ngIf="galleryImages.length > 0" class="absolute bottom-4 right-4 z-10 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm">
+                {{ galleryImages.indexOf(selectedImage || '') + 1 }} / {{ galleryImages.length }}
+              </span>
+            </div>
+          </div>
+        </div>
 
-              <button (click)="nextImage()" [disabled]="galleryImages.length <= 1"
-                class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all disabled:opacity-30 shrink-0 cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <!-- Column 2: Info (col-span-4) -->
+        <div class="lg:col-span-4 flex flex-col gap-4 p-1">
+          <!-- Store Header -->
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div class="flex items-center gap-1">
+              <span class="text-xs font-bold text-[#0050d2] uppercase tracking-wider">{{ product.store_name || 'ALTOQ STORE' }}</span>
+              <svg *ngIf="product.store_id" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-[#0050d2] shrink-0">
+                <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.491 4.491 0 01-3.497-1.307 4.491 4.491 0 01-1.307-3.497A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            
+            <!-- Compartir Button -->
+            <button class="text-xs font-bold text-slate-400 hover:text-[#0050d2] transition-colors flex items-center gap-1 cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742a3 3 0 11-2.2-1.484l5.378-2.689a3 3 0 112.2 1.484l-5.378 2.689zm0 2.516l5.378 2.689a3 3 0 11-2.2 1.484l-5.378-2.689a3 3 0 112.2-1.484z" />
+              </svg>
+              Compartir
+            </button>
+          </div>
+
+          <!-- Title -->
+          <h1 class="text-[26px] font-black text-slate-900 leading-snug tracking-tight mt-1">{{ product.name }}</h1>
+
+          <!-- Rating -->
+          <div class="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+            <span class="text-sm font-bold text-slate-800">{{ (product.rating || 4.8) | number:'1.1-1' }}</span>
+            <div class="flex items-center gap-0.5 text-amber-400">
+              <ng-container *ngFor="let star of getStars()">
+                <!-- Full Star -->
+                <svg *ngIf="star === 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5">
+                  <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
+                </svg>
+                <!-- Half Star -->
+                <svg *ngIf="star === 0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5" fill-opacity="0.5">
+                  <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
+                </svg>
+                <!-- Empty Star -->
+                <svg *ngIf="star === 0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 text-slate-200">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.545.044.757.746.357 1.107l-4.201 3.804a.563.563 0 00-.163.505l1.282 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.163-.505l-4.202-3.804c-.399-.36-.188-1.063.357-1.107l5.519-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                </svg>
+              </ng-container>
+            </div>
+            <span class="text-slate-400">({{ product.rating_count || 120 }} reseñas)</span>
+          </div>
+
+          <!-- Price -->
+          <p class="text-3xl font-black text-[#0050d2]">S/ {{ product.price | number:'1.2-2' }}</p>
+
+          <!-- Description (intro) -->
+          <p class="text-slate-500 text-xs font-semibold leading-relaxed">
+            {{ product.description || 'Zapatillas de lana suaves y cómodas, ideales para mantener tus pies cálidos en casa.' }}
+          </p>
+
+          <!-- Color selection -->
+          <div *ngIf="product.colors && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === 'Estándar')">
+            <p class="text-xs font-bold text-slate-700 mb-2">Color: <span class="font-extrabold text-slate-900">{{ selectedColor }}</span></p>
+            <div class="flex flex-wrap gap-3">
+              <button *ngFor="let color of product.colors"
+                (click)="selectColor(color)"
+                class="w-7 h-7 rounded-full transition-all cursor-pointer relative shrink-0 focus:outline-none"
+                [style.backgroundColor]="getColorClass(color)"
+                [class.ring-2]="selectedColor === color"
+                [class.ring-[#0050d2]]="selectedColor === color"
+                [class.ring-offset-2]="selectedColor === color"
+                [class.border]="selectedColor !== color"
+                [class.border-slate-200]="selectedColor !== color"
+                [title]="color">
               </button>
             </div>
           </div>
 
-          <!-- ===== RIGHT: Info ===== -->
-          <div class="p-6 flex flex-col gap-4">
-
-            <!-- Store row -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-black text-[#0050d2] uppercase tracking-widest">{{ product.store_name || 'ALTOQ STORE' }}</span>
-                <svg *ngIf="product.store_id" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-[#0050d2]">
-                  <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.491 4.491 0 01-3.497-1.307 4.491 4.491 0 01-1.307-3.497A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <a *ngIf="product.store_id" [routerLink]="['/store', product.store_id]"
-                class="text-sm font-semibold text-[#0050d2] hover:underline flex items-center gap-0.5 cursor-pointer">
-                Ver tienda
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-              </a>
-            </div>
-
-            <!-- Name -->
-            <h1 class="text-2xl font-bold text-slate-900 leading-snug">{{ product.name }}</h1>
-
-            <!-- Rating -->
-            <div class="flex items-center gap-2">
-              <span class="text-base font-bold text-slate-800">{{ product.rating || 0 }}</span>
-              <div class="flex items-center gap-0.5 text-yellow-400">
-                <ng-container *ngFor="let star of getStars()">
-                  <svg *ngIf="star === 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-                    <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
-                  </svg>
-                  <svg *ngIf="star === 0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4" fill-opacity="0.5">
-                    <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
-                  </svg>
-                  <svg *ngIf="star === 0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-slate-300">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.545.044.757.746.357 1.107l-4.201 3.804a.563.563 0 00-.163.505l1.282 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.163-.505l-4.202-3.804c-.399-.36-.188-1.063.357-1.107l5.519-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                  </svg>
-                </ng-container>
-              </div>
-              <span class="text-sm text-slate-500">({{ product.rating_count || 0 }} reseñas)</span>
-            </div>
-
-            <!-- Price -->
-            <p class="text-3xl font-extrabold text-[#0050d2]">S/ {{ product.price | number:'1.2-2' }}</p>
-
-            <!-- Description -->
-            <p class="text-sm text-slate-600 leading-relaxed">{{ product.description }}</p>
-
-            <!-- Specifications as feature grid -->
-            <div *ngIf="product.specifications && Object.keys(product.specifications).length > 0"
-              class="grid grid-cols-2 gap-3">
-              <div *ngFor="let spec of visibleSpecs"
-                class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50">
-                <div class="w-8 h-8 rounded-full bg-blue-50 text-[#0050d2] flex items-center justify-center shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p class="text-xs font-bold text-slate-800">{{ spec[0] }}</p>
-                  <p class="text-[11px] text-slate-500">{{ spec[1] }}</p>
-                </div>
-              </div>
-            </div>
-
-            <hr class="border-slate-100" />
-
-            <!-- Colors -->
-            <div *ngIf="product.colors && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === 'Estándar')">
-              <p class="text-sm font-semibold text-slate-700 mb-2">Color</p>
-              <div class="flex flex-wrap gap-2">
-                <button *ngFor="let color of product.colors"
-                  (click)="selectColor(color)"
-                  class="px-3 py-1.5 text-sm font-medium rounded-lg border transition-all"
-                  [class.border-blue-500]="selectedColor === color"
-                  [class.bg-blue-50]="selectedColor === color"
-                  [class.text-blue-700]="selectedColor === color"
-                  [class.border-slate-200]="selectedColor !== color"
-                  [class.text-slate-600]="selectedColor !== color">
-                  {{ color }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Quantity + Add to cart -->
-            <div class="flex items-center gap-3 flex-wrap">
-              <div class="flex items-center">
-                <span class="text-sm font-semibold text-slate-700 mr-3">Cantidad:</span>
-                <div class="flex items-center rounded-xl border border-slate-200 overflow-hidden">
-                  <button (click)="decrementQuantity()" [disabled]="quantity <= 1 || (product.stock || 0) <= 0"
-                    class="w-9 h-9 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 cursor-pointer">−</button>
-                  <span class="w-10 text-center text-sm font-bold text-slate-800 border-x border-slate-200">
-                    {{ (product.stock || 0) <= 0 ? 0 : quantity }}
-                  </span>
-                  <button (click)="incrementQuantity()" [disabled]="(product.stock || 0) <= quantity || (product.stock || 0) <= 0"
-                    class="w-9 h-9 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 cursor-pointer">+</button>
-                </div>
-              </div>
-              <button
-                (click)="addToCart()"
-                [disabled]="(product.stock || 0) <= 0"
-                class="flex-1 min-w-[160px] flex items-center justify-center gap-2 bg-[#0050d2] hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                {{ (product.stock || 0) <= 0 ? 'Agotado' : 'Agregar al carrito' }}
+          <!-- Size selection -->
+          <div *ngIf="sizes.length > 0">
+            <p class="text-xs font-bold text-slate-700 mb-2">Talla:</p>
+            <div class="flex flex-wrap gap-2">
+              <button *ngFor="let size of sizes" (click)="selectedSize = size"
+                class="w-10 h-10 flex items-center justify-center text-sm font-bold rounded-lg border transition-all duration-150 cursor-pointer bg-white"
+                [class.border-[#0050d2]]="selectedSize === size"
+                [class.text-[#0050d2]]="selectedSize === size"
+                [class.border-slate-200]="selectedSize !== size"
+                [class.text-slate-600]="selectedSize !== size"
+                [class.hover:bg-slate-50]="selectedSize !== size">
+                {{ size }}
               </button>
             </div>
+          </div>
 
-            <!-- Trust badges -->
-            <div class="flex items-center gap-4 pt-1 flex-wrap">
-              <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4 text-[#0050d2]">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <p class="font-semibold text-slate-700 leading-none">Envíos rápidos</p>
-                  <p class="leading-none mt-0.5">24-48 horas</p>
-                </div>
+          <!-- Quantity row -->
+          <div class="flex flex-col gap-1.5">
+            <span class="text-xs font-bold text-slate-700">Cantidad:</span>
+            <div class="flex items-center gap-3">
+              <!-- Selector -->
+              <div class="flex items-center rounded-xl border border-slate-200 bg-white overflow-hidden shrink-0">
+                <button (click)="decrementQuantity()" [disabled]="quantity <= 1 || (product.stock || 0) <= 0"
+                  class="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-30 cursor-pointer font-bold text-lg">
+                  −
+                </button>
+                <span class="w-10 text-center text-sm font-bold text-slate-800">
+                  {{ (product.stock || 0) <= 0 ? 0 : quantity }}
+                </span>
+                <button (click)="incrementQuantity()" [disabled]="(product.stock || 0) <= quantity || (product.stock || 0) <= 0"
+                  class="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-30 cursor-pointer font-bold text-lg">
+                  +
+                </button>
               </div>
-              <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4 text-[#0050d2]">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              <!-- Stock count -->
+              <span class="text-xs text-slate-400 font-bold">
+                {{ product.stock || 0 }} disponibles
+              </span>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <button
+              (click)="addToCart()"
+              [disabled]="(product.stock || 0) <= 0"
+              class="h-11 flex items-center justify-center gap-2 bg-[#0050d2] hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm px-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Agregar al carrito
+            </button>
+            <button
+              [disabled]="(product.stock || 0) <= 0"
+              class="h-11 flex items-center justify-center bg-white border border-[#0050d2] text-[#0050d2] hover:bg-blue-50/50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 font-bold text-sm px-4 rounded-xl transition-all duration-200 cursor-pointer">
+              Comprar ahora
+            </button>
+          </div>
+        </div>
+
+        <!-- Column 3: Shipping Checklist & Seller Box (col-span-3) -->
+        <div class="lg:col-span-3 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col gap-6">
+          
+          <!-- Section: Seller Info -->
+          <div>
+            <h3 class="text-xs font-bold text-slate-800 mb-4">Información del vendedor</h3>
+            
+            <div class="flex items-start gap-3">
+              <!-- Shop Icon Circle -->
+              <div class="w-10 h-10 rounded-full bg-blue-50 text-[#0050d2] flex items-center justify-center font-bold text-lg shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                <div>
-                  <p class="font-semibold text-slate-700 leading-none">Compra segura</p>
-                  <p class="leading-none mt-0.5">Datos protegidos</p>
-                </div>
               </div>
-              <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4 text-[#0050d2]">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <p class="font-semibold text-slate-700 leading-none">Garantía</p>
-                  <p class="leading-none mt-0.5">30 días</p>
+              
+              <!-- Store Details -->
+              <div class="flex-grow min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <h4 class="text-sm font-bold text-slate-800 truncate">{{ product.store_name || 'ALTOQ STORE' }}</h4>
+                  <svg *ngIf="product.store_id" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-[#0050d2] shrink-0">
+                    <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.491 4.491 0 01-3.497-1.307 4.491 4.491 0 01-1.307-3.497A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                  </svg>
                 </div>
+                
+                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-bold mt-1">
+                  <div class="flex items-center gap-0.5 text-amber-400 shrink-0">
+                    <svg *ngFor="let s of [1,2,3,4,5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3">
+                      <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <span class="text-slate-400 font-bold ml-0.5">(340)</span>
+                </div>
+                
+                <p class="text-[11px] text-slate-400 font-bold mt-0.5">{{ product.sales || 15 }} ventas</p>
               </div>
             </div>
 
+            <!-- "Ver tienda" Button -->
+            <a *ngIf="product.store_id" [routerLink]="['/store', product.store_id]"
+              class="mt-4 w-full h-9 flex items-center justify-center bg-white border border-[#0050d2] text-[#0050d2] hover:bg-blue-50/50 rounded-xl font-bold text-xs transition-colors cursor-pointer select-none">
+              Ver tienda
+            </a>
+          </div>
+
+          <!-- Divider -->
+          <hr class="border-slate-100" />
+
+          <!-- Section: Shipping Checklist -->
+          <div class="flex flex-col gap-4">
+            <!-- Free Shipping Badge -->
+            <div class="flex gap-3">
+              <div class="text-green-600 shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.75A1.125 1.125 0 0 1 2.625 17.625V4.625A1.125 1.125 0 0 1 3.75 3.5h9.75a1.125 1.125 0 0 1 1.125 1.125v3.375m-1.5 10.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h3.75a1.125 1.125 0 0 0 1.125-1.125V11.25m-12 5.25v-5.25m0 9h-1.5" />
+                </svg>
+              </div>
+              <div class="leading-tight">
+                <p class="text-xs font-bold text-green-600">Envío gratis en Piura</p>
+                <p class="text-[10px] text-slate-400 font-bold mt-0.5">Entrega en 24 a 48 horas</p>
+              </div>
+            </div>
+            
+            <!-- Compra Segura -->
+            <div class="flex gap-3">
+              <div class="text-[#0050d2] shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div class="leading-tight">
+                <p class="text-xs font-bold text-slate-800">Compra segura</p>
+                <p class="text-[10px] text-slate-400 font-bold mt-0.5">Tus datos están protegidos</p>
+              </div>
+            </div>
+
+            <!-- Devolución gratis -->
+            <div class="flex gap-3">
+              <div class="text-[#0050d2] shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3M4.5 12l-3 3m3-3l3 3m-3.362-3c.017-.22.032-.441.046-.662a4.006 4.006 0 013.7-3.7 48.656 48.656 0 017.324 0 4.006 4.006 0 013.7 3.7c.017.22.032.441.046.662" />
+                </svg>
+              </div>
+              <div class="leading-tight">
+                <p class="text-xs font-bold text-slate-800">Devolución gratis</p>
+                <p class="text-[10px] text-slate-400 font-bold mt-0.5">Tienes 15 días para devolverlo</p>
+              </div>
+            </div>
+
+            <!-- Garantía -->
+            <div class="flex gap-3">
+              <div class="text-orange-500 shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                </svg>
+              </div>
+              <div class="leading-tight">
+                <p class="text-xs font-bold text-slate-800">Garantía</p>
+                <p class="text-[10px] text-slate-400 font-bold mt-0.5">30 días de garantía</p>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+
+      </div>
+
+      <!-- Description & Custom specs (bottom full row) -->
+      <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+        <h2 class="text-[17px] font-black text-slate-900 mb-3">Descripción del producto</h2>
+        <p class="text-sm text-slate-500 leading-relaxed font-semibold mb-6">
+          {{ product.description || 'Fabricadas con lana de alta calidad, estas zapatillas brindan suavidad, comodidad y calidez. Su diseño acolchado y suela antideslizante las hacen perfectas para el uso diario en casa.' }}
+        </p>
+
+        <!-- Specifications horizontal line-up -->
+        <div *ngIf="product.specifications && Object.keys(product.specifications).length > 0"
+          class="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-6">
+          <div *ngFor="let spec of visibleSpecs"
+            class="flex flex-col items-center text-center p-3 rounded-xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
+            
+            <div class="w-10 h-10 rounded-full bg-blue-50 text-[#0050d2] flex items-center justify-center mb-2">
+              <!-- Cloud Icon -->
+              <svg *ngIf="keyContains(spec[0], 'material') || keyContains(spec[0], 'lana') || keyContains(spec[0], 'algodón')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+              </svg>
+              <!-- Wrench/Safety Icon -->
+              <svg *ngIf="keyContains(spec[0], 'suela') || keyContains(spec[0], 'antideslizante') || keyContains(spec[0], 'seguridad')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.67 2.67 0 1021 17.25l-5.83-5.83m-3.75 3.75a2.98 2.98 0 010-4.24m-3.75 3.75A2.98 2.98 0 005.17 17.25L3 19.42A2.67 2.67 0 106.75 23.25l2.17-2.17a2.98 2.98 0 000-4.24M11.42 15.17a2.98 2.98 0 000-4.24M15.17 11.42a2.98 2.98 0 00-4.24 0M15.17 11.42L21 5.58A2.67 2.67 0 1017.25 1.83l-5.83 5.83m-3.75 3.75a2.98 2.98 0 01-4.24 0L3 9.25A2.67 2.67 0 106.75 5.5l2.17 2.17a2.98 2.98 0 010 4.24" />
+              </svg>
+              <!-- Pen/Feather Icon -->
+              <svg *ngIf="keyContains(spec[0], 'livian') || keyContains(spec[0], 'comod') || keyContains(spec[0], 'peso') || keyContains(spec[0], 'diario')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+              </svg>
+              <!-- Clean/Sparkles Icon -->
+              <svg *ngIf="keyContains(spec[0], 'limpiar') || keyContains(spec[0], 'lavar') || keyContains(spec[0], 'resistente') || keyContains(spec[0], 'limpio')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l5.096-.813a2 2 0 001.036-.572l5.157-5.157a2 2 0 000-2.828l-5.096-5.096a2 2 0 00-2.828 0l-5.157 5.157a2 2 0 00-.572 1.036z" />
+              </svg>
+              <!-- Standard Check Icon Fallback -->
+              <svg *ngIf="!isCustomSpec(spec[0])" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            
+            <p class="text-xs font-bold text-slate-800 leading-tight mb-1">{{ spec[0] }}</p>
+            <p class="text-[10px] text-slate-500 font-semibold leading-normal">{{ spec[1] }}</p>
           </div>
         </div>
       </div>
 
-      <!-- Related products section placeholder -->
+      <!-- Related Products Section -->
       <div class="mt-10">
-        <div class="flex items-center justify-between mb-5">
-          <h2 class="text-lg font-bold text-slate-900">Productos que también te pueden interesar</h2>
-          <a routerLink="/products" class="text-sm font-semibold text-[#0050d2] hover:underline flex items-center gap-0.5">
+        <div class="flex items-center justify-between mb-5 border-b border-slate-100 pb-2">
+          <h2 class="text-[17px] font-black text-slate-900">Productos relacionados</h2>
+          <a routerLink="/products" class="text-xs font-bold text-[#0050d2] hover:underline flex items-center gap-0.5">
             Ver todos
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
           </a>
         </div>
-        <!-- Related products grid would go here — rendered by parent or lazy loaded -->
+        
         <p class="text-sm text-slate-400 italic" *ngIf="relatedProducts.length === 0">Cargando productos relacionados...</p>
-        <div *ngIf="relatedProducts.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <div *ngFor="let rp of relatedProducts"
-            class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-            [routerLink]="['/products', rp.id]">
-            <div class="relative">
-              <img [src]="rp.image" [alt]="rp.name" class="w-full h-36 object-cover" />
-              <button class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white shadow flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-3.5 h-3.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                </svg>
-              </button>
-            </div>
-            <div class="p-3">
-              <p class="text-xs font-semibold text-slate-800 line-clamp-2 leading-snug">{{ rp.name }}</p>
-              <p class="text-sm font-bold text-[#0050d2] mt-1.5">S/ {{ rp.price | number:'1.2-2' }}</p>
-              <div class="flex items-center gap-0.5 mt-1 text-yellow-400">
-                <ng-container *ngFor="let s of getStarsFor(rp)">
-                  <svg *ngIf="s === 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3">
-                    <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd"/>
-                  </svg>
-                  <svg *ngIf="s === 0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3 text-slate-300">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.545.044.757.746.357 1.107l-4.201 3.804a.563.563 0 00-.163.505l1.282 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.163-.505l-4.202-3.804c-.399-.36-.188-1.063.357-1.107l5.519-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                  </svg>
-                </ng-container>
-                <span class="text-[10px] text-slate-400 ml-0.5">({{ rp.rating_count || 0 }})</span>
-              </div>
-            </div>
+        <div *ngIf="relatedProducts.length > 0" class="relative">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            <app-product-card *ngFor="let rp of relatedProducts" [product]="rp" (addToCart)="addToCart()" class="h-full"></app-product-card>
           </div>
+          <!-- Floating Next Arrow -->
+          <button class="absolute -right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-slate-100 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:scale-105 active:scale-95 transition-all z-10 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
         </div>
       </div>
 
