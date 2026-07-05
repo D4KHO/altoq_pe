@@ -8,7 +8,8 @@ from ..models.user import User
 from ..models.product import Product
 from ..models.store import Store
 from ..models.chat import Chat
-from ..schemas.user import UserResponse
+from ..schemas.user import UserResponse, UserCreate, UserUpdate
+from ..schemas.address import Address
 from ..utils.security import verify_token
 
 router = APIRouter(prefix="/api/admin/users", tags=["admin-users"])
@@ -53,6 +54,78 @@ def get_user(
         )
     
     return user
+
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(
+    user_data: UserCreate,
+    admin: dict = Depends(verify_admin),
+    db: Session = Depends(get_db)
+):
+    """Create a new user (admin only)"""
+    db_user = db.query(User).filter(User.email == user_data.email).first()
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El correo electrónico ya está registrado."
+        )
+    
+    from ..utils.security import get_password_hash
+    hashed_password = get_password_hash(user_data.password)
+    
+    new_user = User(
+        email=user_data.email,
+        name=user_data.name,
+        password=hashed_password,
+        phone=user_data.phone,
+        address=user_data.address,
+        role=user_data.role.value if hasattr(user_data.role, 'value') else user_data.role
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+@router.put("/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: int,
+    user_update: UserUpdate,
+    admin: dict = Depends(verify_admin),
+    db: Session = Depends(get_db)
+):
+    """Update a user's details (admin only)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    
+    update_data = user_update.dict(exclude_unset=True)
+    if "role" in update_data and update_data["role"] is not None:
+        role_val = update_data["role"]
+        update_data["role"] = role_val.value if hasattr(role_val, 'value') else role_val
+
+    for field, value in update_data.items():
+        setattr(user, field, value)
+        
+    db.commit()
+    db.refresh(user)
+    return user
+
+@router.get("/{user_id}/addresses", response_model=List[Address])
+def get_user_addresses(
+    user_id: int,
+    admin: dict = Depends(verify_admin),
+    db: Session = Depends(get_db)
+):
+    """Get all addresses for a specific user (admin only)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    return user.addresses
 
 @router.delete("/{user_id}")
 def delete_user(

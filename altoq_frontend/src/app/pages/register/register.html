@@ -36,7 +36,7 @@
             id="name" 
             formControlName="name"
             placeholder="Juan Pérez"
-            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             [class.border-red-300]="registerForm.get('name')?.invalid && registerForm.get('name')?.touched"
           />
           <div *ngIf="registerForm.get('name')?.invalid && registerForm.get('name')?.touched" class="text-red-500 text-xs mt-1">
@@ -52,7 +52,7 @@
             id="email" 
             formControlName="email"
             placeholder="tu@ejemplo.com"
-            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             [class.border-red-300]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
           />
           <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" class="text-red-500 text-xs mt-1">
@@ -68,7 +68,7 @@
             id="password" 
             formControlName="password"
             placeholder="Mínimo 8 caracteres"
-            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             [class.border-red-300]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
           />
           <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" class="text-red-500 text-xs mt-1">
@@ -84,7 +84,7 @@
             id="confirm-password" 
             formControlName="confirmPassword"
             placeholder="Repite tu contraseña"
-            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             [class.border-red-300]="registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched"
           />
           <div *ngIf="registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched" class="text-red-500 text-xs mt-1">

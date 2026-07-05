@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, datetime, timedelta
-from typing import List
+from typing import List, Optional
+import csv
+import io
 
 from ..database import get_db
 from ..models.user import User
@@ -14,48 +17,114 @@ from .admin_stores import verify_admin
 
 router = APIRouter(prefix="/api/admin/metrics", tags=["admin-metrics"])
 
+def parse_date_range(start_date: Optional[str], end_date: Optional[str], default_days: int = 30):
+    """
+    Parsea y valida un rango de fechas. Si no se especifican, retrocede default_days a partir de hoy.
+    """
+    if start_date and end_date:
+        try:
+            s_date = date.fromisoformat(start_date)
+            e_date = date.fromisoformat(end_date)
+            if s_date > e_date:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="La fecha de inicio no puede ser posterior a la fecha de fin."
+                )
+            return s_date, e_date
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Formato de fecha inválido. Use YYYY-MM-DD."
+            )
+    else:
+        e_date = date.today()
+        s_date = e_date - timedelta(days=default_days)
+        return s_date, e_date
+
 @router.get("/summary", response_model=AdminMetricsSummary)
 def get_admin_metrics_summary(
+    start_date: Optional[str] = Query(None, description="Fecha de inicio (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Fecha de fin (YYYY-MM-DD)"),
     admin: dict = Depends(verify_admin),
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene un resumen global de las métricas de la plataforma para el administrador.
+    Obtiene un resumen global de las métricas de la plataforma, opcionalmente filtrado por un rango de fechas.
+    Si no se especifican fechas, retorna el consolidado histórico acumulado de todos los tiempos.
     """
     try:
-        # Contar usuarios por rol
-        total_users = db.query(User).count()
-        total_buyers = db.query(User).filter(User.role == "buyer").count()
-        total_sellers = db.query(User).filter(User.role == "seller").count()
+        # Filtro condicional por fechas
+        start_datetime = None
+        end_datetime = None
+        s_date = None
+        e_date = None
+        
+        if start_date and end_date:
+            s_date, e_date = parse_date_range(start_date, end_date)
+            start_datetime = datetime.combine(s_date, datetime.min.time())
+            end_datetime = datetime.combine(e_date, datetime.max.time())
 
-        # Contar tiendas por estado
-        total_stores = db.query(Store).count()
-        active_stores = db.query(Store).filter(Store.status == "active").count()
-        pending_stores = db.query(Store).filter(Store.status == "pending").count()
-        suspended_stores = db.query(Store).filter(Store.status == "suspended").count()
+        # 1. Contar usuarios por rol (registrados en el rango o totales)
+        query_user = db.query(User)
+        if start_datetime and end_datetime:
+            query_user = query_user.filter(User.created_at >= start_datetime, User.created_at <= end_datetime)
+            
+        total_users = query_user.count()
+        total_buyers = query_user.filter(User.role == "buyer").count()
+        total_sellers = query_user.filter(User.role == "seller").count()
 
-        # Ventas y órdenes (sumar de StoreMetrics o de Order directamente)
-        # Hacemos coalesce para evitar recibir None de la base de datos
-        total_revenue_metrics = db.query(func.coalesce(func.sum(StoreMetric.revenue), 0.0)).scalar()
-        total_orders_metrics = db.query(func.coalesce(func.sum(StoreMetric.orders_delivered), 0)).scalar()
+        # 2. Contar tiendas por estado (registradas en el rango o totales)
+        query_store = db.query(Store)
+        if start_datetime and end_datetime:
+            query_store = query_store.filter(Store.created_at >= start_datetime, Store.created_at <= end_datetime)
+            
+        total_stores = query_store.count()
+        active_stores = query_store.filter(Store.status == "active").count()
+        pending_stores = query_store.filter(Store.status == "pending").count()
+        suspended_stores = query_store.filter(Store.status == "suspended").count()
 
-        # Por si acaso StoreMetrics no está completamente integrado, usamos Orders completados como fallback
-        total_revenue_orders = db.query(func.coalesce(func.sum(Order.total_amount), 0.0)).filter(Order.status == "completed").scalar()
-        total_orders_count = db.query(Order).filter(Order.status == "completed").count()
+        # 3. Ventas y órdenes (sumar de StoreMetric o de Order)
+        query_revenue_metrics = db.query(func.coalesce(func.sum(StoreMetric.revenue), 0.0))
+        query_orders_metrics = db.query(func.coalesce(func.sum(StoreMetric.orders_delivered), 0))
+        query_visits_metrics = db.query(func.coalesce(func.sum(StoreMetric.visits), 0))
+        query_chats_metrics = db.query(func.coalesce(func.sum(StoreMetric.chat_sessions), 0))
+        query_templates_metrics = db.query(func.coalesce(func.sum(StoreMetric.template_usage), 0))
+        
+        if s_date and e_date:
+            query_revenue_metrics = query_revenue_metrics.filter(StoreMetric.date >= s_date, StoreMetric.date <= e_date)
+            query_orders_metrics = query_orders_metrics.filter(StoreMetric.date >= s_date, StoreMetric.date <= e_date)
+            query_visits_metrics = query_visits_metrics.filter(StoreMetric.date >= s_date, StoreMetric.date <= e_date)
+            query_chats_metrics = query_chats_metrics.filter(StoreMetric.date >= s_date, StoreMetric.date <= e_date)
+            query_templates_metrics = query_templates_metrics.filter(StoreMetric.date >= s_date, StoreMetric.date <= e_date)
 
-        # Elegimos el mayor valor (para asegurar que si se crearon órdenes directamente, se reflejen)
+        total_revenue_metrics = query_revenue_metrics.scalar()
+        total_orders_metrics = query_orders_metrics.scalar()
+        total_visits = int(query_visits_metrics.scalar())
+        total_chats = int(query_chats_metrics.scalar())
+        total_templates = int(query_templates_metrics.scalar())
+
+        # Fallback de órdenes reales registradas
+        query_revenue_orders = db.query(func.coalesce(func.sum(Order.total_amount), 0.0)).filter(Order.status == "completed")
+        query_orders_count = db.query(Order).filter(Order.status == "completed")
+        
+        if start_datetime and end_datetime:
+            query_revenue_orders = query_revenue_orders.filter(Order.created_at >= start_datetime, Order.created_at <= end_datetime)
+            query_orders_count = query_orders_count.filter(Order.created_at >= start_datetime, Order.created_at <= end_datetime)
+            
+        total_revenue_orders = query_revenue_orders.scalar()
+        total_orders_count = query_orders_count.count()
+
+        # Elegimos el mayor valor (para asegurar consistencia si hay órdenes directas)
         total_revenue = float(max(total_revenue_metrics, total_revenue_orders))
         total_orders = int(max(total_orders_metrics, total_orders_count))
 
-        # Sumatorias de otras métricas de interacción
-        total_visits = int(db.query(func.coalesce(func.sum(StoreMetric.visits), 0)).scalar())
-        total_chats = int(db.query(func.coalesce(func.sum(StoreMetric.chat_sessions), 0)).scalar())
-        total_templates = int(db.query(func.coalesce(func.sum(StoreMetric.template_usage), 0)).scalar())
-
-        # Si total_chats es 0 en StoreMetrics, contamos directamente chats creados
+        # Si total_chats es 0, contamos directamente chats de la tabla
         if total_chats == 0:
             from ..models.chat import Chat
-            total_chats = db.query(Chat).count()
+            query_chat_table = db.query(Chat)
+            if start_datetime and end_datetime:
+                query_chat_table = query_chat_table.filter(Chat.created_at >= start_datetime, Chat.created_at <= end_datetime)
+            total_chats = query_chat_table.count()
 
         return AdminMetricsSummary(
             total_revenue=total_revenue,
@@ -79,17 +148,27 @@ def get_admin_metrics_summary(
 
 @router.get("/charts", response_model=List[AdminMetricChartPoint])
 def get_admin_metrics_charts(
-    days: int = Query(30, description="Número de días a retroceder", ge=1, le=365),
+    days: Optional[int] = Query(30, description="Número de días a retroceder (si no se especifican fechas)", ge=1, le=365),
+    start_date: Optional[str] = Query(None, description="Fecha de inicio personalizada (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Fecha de fin personalizada (YYYY-MM-DD)"),
     admin: dict = Depends(verify_admin),
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene las métricas agregadas por día para armar gráficos temporales en el dashboard de administración.
+    Obtiene las métricas agregadas por día para armar gráficos temporales en el rango especificado o días relativos.
     """
     try:
-        today = date.today()
-        start_date = today - timedelta(days=days)
-        start_datetime = datetime.combine(start_date, datetime.min.time())
+        s_date, e_date = parse_date_range(start_date, end_date, default_days=days or 30)
+        days_diff = (e_date - s_date).days
+        
+        if days_diff > 365:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El rango máximo permitido para gráficos diarios es de 365 días."
+            )
+            
+        start_datetime = datetime.combine(s_date, datetime.min.time())
+        end_datetime = datetime.combine(e_date, datetime.max.time())
 
         # 1. Agrupar ingresos y órdenes por día
         order_stats = db.query(
@@ -98,7 +177,8 @@ def get_admin_metrics_charts(
             func.sum(Order.total_amount).label("revenue")
         ).filter(
             Order.status == "completed",
-            Order.created_at >= start_datetime
+            Order.created_at >= start_datetime,
+            Order.created_at <= end_datetime
         ).group_by(
             func.date(Order.created_at)
         ).all()
@@ -111,7 +191,8 @@ def get_admin_metrics_charts(
             func.coalesce(func.sum(StoreMetric.visits), 0).label("visits"),
             func.coalesce(func.sum(StoreMetric.chat_sessions), 0).label("chats")
         ).filter(
-            StoreMetric.date >= start_date
+            StoreMetric.date >= s_date,
+            StoreMetric.date <= e_date
         ).group_by(
             StoreMetric.date
         ).all()
@@ -123,7 +204,8 @@ def get_admin_metrics_charts(
             func.date(User.created_at).label("day"),
             func.count(User.id).label("new_users")
         ).filter(
-            User.created_at >= start_datetime
+            User.created_at >= start_datetime,
+            User.created_at <= end_datetime
         ).group_by(
             func.date(User.created_at)
         ).all()
@@ -132,8 +214,8 @@ def get_admin_metrics_charts(
 
         # 4. Combinar datos en un solo set por fecha
         chart_points = []
-        for i in range(days + 1):
-            current_day = start_date + timedelta(days=i)
+        for i in range(days_diff + 1):
+            current_day = s_date + timedelta(days=i)
             day_str = str(current_day)
 
             # Buscar valores en los diccionarios mapeados
@@ -141,8 +223,7 @@ def get_admin_metrics_charts(
             _, chats_count = metrics_map.get(day_str, (0, 0))
             new_users_count = users_map.get(day_str, 0)
 
-            # Si no hay chats registrados en las métricas, como fallback podemos contar
-            # de la tabla de chats directamente para ese día.
+            # Si no hay chats registrados en las métricas, como fallback contamos de la tabla
             if chats_count == 0:
                 from ..models.chat import Chat
                 day_start = datetime.combine(current_day, datetime.min.time())
@@ -163,10 +244,120 @@ def get_admin_metrics_charts(
             )
 
         return chart_points
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al obtener datos de gráficos: {str(e)}"
+        )
+
+@router.get("/export")
+def export_admin_metrics(
+    start_date: Optional[str] = Query(None, description="Fecha de inicio (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Fecha de fin (YYYY-MM-DD)"),
+    admin: dict = Depends(verify_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Exporta el reporte detallado diario de métricas en formato CSV compatible con Microsoft Excel en español.
+    """
+    try:
+        s_date, e_date = parse_date_range(start_date, end_date, default_days=30)
+        days_diff = (e_date - s_date).days
+        
+        if days_diff > 365:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El rango máximo permitido para exportar datos es de 365 días."
+            )
+            
+        start_datetime = datetime.combine(s_date, datetime.min.time())
+        end_datetime = datetime.combine(e_date, datetime.max.time())
+        
+        # 1. Obtener órdenes por día
+        order_stats = db.query(
+            func.date(Order.created_at).label("day"),
+            func.count(Order.id).label("orders"),
+            func.sum(Order.total_amount).label("revenue")
+        ).filter(
+            Order.status == "completed",
+            Order.created_at >= start_datetime,
+            Order.created_at <= end_datetime
+        ).group_by(func.date(Order.created_at)).all()
+        orders_map = {str(row.day): (int(row.orders), float(row.revenue or 0.0)) for row in order_stats}
+        
+        # 2. Obtener chats y visitas por día
+        metric_stats = db.query(
+            StoreMetric.date.label("day"),
+            func.coalesce(func.sum(StoreMetric.visits), 0).label("visits"),
+            func.coalesce(func.sum(StoreMetric.chat_sessions), 0).label("chats")
+        ).filter(
+            StoreMetric.date >= s_date,
+            StoreMetric.date <= e_date
+        ).group_by(StoreMetric.date).all()
+        metrics_map = {str(row.day): (int(row.visits), int(row.chats)) for row in metric_stats}
+        
+        # 3. Obtener nuevos usuarios por día
+        user_stats = db.query(
+            func.date(User.created_at).label("day"),
+            func.count(User.id).label("new_users")
+        ).filter(
+            User.created_at >= start_datetime,
+            User.created_at <= end_datetime
+        ).group_by(func.date(User.created_at)).all()
+        users_map = {str(row.day): int(row.new_users) for row in user_stats}
+        
+        # Generar CSV en memoria
+        output = io.StringIO()
+        # BOM de UTF-8 para que Excel detecte la codificación de inmediato
+        output.write('\ufeff')
+        
+        # Delimitador punto y coma (;) para compatibilidad en sistemas en español
+        writer = csv.writer(output, delimiter=';')
+        writer.writerow(["Fecha", "Ingresos (S/.)", "Pedidos Completados", "Interacciones Chat IA", "Nuevos Usuarios Registrados", "Visitas Estimadas"])
+        
+        for i in range(days_diff + 1):
+            current_day = s_date + timedelta(days=i)
+            day_str = str(current_day)
+            
+            orders_count, revenue = orders_map.get(day_str, (0, 0.0))
+            visits_count, chats_count = metrics_map.get(day_str, (0, 0))
+            new_users_count = users_map.get(day_str, 0)
+            
+            if chats_count == 0:
+                from ..models.chat import Chat
+                day_start = datetime.combine(current_day, datetime.min.time())
+                day_end = datetime.combine(current_day, datetime.max.time())
+                chats_count = db.query(Chat).filter(
+                    Chat.created_at >= day_start,
+                    Chat.created_at <= day_end
+                ).count()
+                
+            writer.writerow([
+                current_day.strftime("%d/%m/%Y"),
+                f"{revenue:.2f}",
+                orders_count,
+                chats_count,
+                new_users_count,
+                visits_count
+            ])
+            
+        output.seek(0)
+        return StreamingResponse(
+            io.BytesIO(output.read().encode("utf-8-sig")),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=reporte_altoq_metricas_{s_date}_a_{e_date}.csv",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al generar la exportación de métricas: {str(e)}"
         )
 
 @router.get("/rankings", response_model=List[AdminStoreRanking])
@@ -179,7 +370,6 @@ def get_admin_store_rankings(
     Obtiene el ranking de las mejores tiendas ordenadas por ingresos.
     """
     try:
-        # Hacemos un join de Store con StoreMetric para sumar su revenue y visitas agregadas
         rankings = db.query(
             Store.id.label("store_id"),
             Store.name.label("name"),

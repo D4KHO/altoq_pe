@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { AdminMetricsService, AdminMetricsSummary, AdminMetricChartPoint, AdminStoreRanking } from '../../../services/admin-metrics';
 
 @Component({
   selector: 'app-metrics-dashboard',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './metrics-dashboard.html',
   styleUrl: './metrics-dashboard.css'
 })
@@ -15,6 +16,11 @@ export class MetricsDashboard implements OnInit {
   rankings: AdminStoreRanking[] = [];
   isLoading = true;
   daysPeriod = 30;
+
+  // Filtros de fecha
+  datePreset = '30'; // '7', '30', 'this_month', 'prev_month', 'custom'
+  customStartDate = '';
+  customEndDate = '';
 
   // Configuración de gráficos SVG
   svgPoints: any[] = [];
@@ -49,9 +55,12 @@ export class MetricsDashboard implements OnInit {
 
   loadData(): void {
     this.isLoading = true;
+
+    const start = this.customStartDate || undefined;
+    const end = this.customEndDate || undefined;
     
     // Consultar KPIs generales
-    this.metricsService.getSummary().subscribe({
+    this.metricsService.getSummary(start, end).subscribe({
       next: (summary) => {
         this.summary = summary;
       },
@@ -61,7 +70,7 @@ export class MetricsDashboard implements OnInit {
     });
 
     // Consultar datos de gráficos
-    this.metricsService.getCharts(this.daysPeriod).subscribe({
+    this.metricsService.getCharts(this.daysPeriod, start, end).subscribe({
       next: (charts) => {
         this.charts = charts;
         this.calculateSvgPoints();
@@ -84,20 +93,90 @@ export class MetricsDashboard implements OnInit {
     });
   }
 
-  changePeriod(days: number): void {
-    this.daysPeriod = days;
-    this.isLoading = true;
-    this.metricsService.getCharts(days).subscribe({
-      next: (charts) => {
-        this.charts = charts;
-        this.calculateSvgPoints();
-        this.isLoading = false;
+  onPresetChange(): void {
+    const today = new Date();
+    if (this.datePreset === '7') {
+      this.daysPeriod = 7;
+      this.customStartDate = '';
+      this.customEndDate = '';
+      this.loadData();
+    } else if (this.datePreset === '30') {
+      this.daysPeriod = 30;
+      this.customStartDate = '';
+      this.customEndDate = '';
+      this.loadData();
+    } else if (this.datePreset === 'this_month') {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      this.customStartDate = this.formatDateIso(start);
+      this.customEndDate = this.formatDateIso(today);
+      this.loadData();
+    } else if (this.datePreset === 'prev_month') {
+      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const end = new Date(today.getFullYear(), today.getMonth(), 0); // último día del mes anterior
+      this.customStartDate = this.formatDateIso(start);
+      this.customEndDate = this.formatDateIso(end);
+      this.loadData();
+    } else if (this.datePreset === 'custom') {
+      // Se espera que el usuario ingrese fechas manualmente y haga clic en Aplicar
+    }
+  }
+
+  applyCustomRange(): void {
+    if (!this.customStartDate || !this.customEndDate) {
+      alert('Por favor seleccione una fecha de inicio y una fecha de fin.');
+      return;
+    }
+
+    const start = new Date(this.customStartDate);
+    const end = new Date(this.customEndDate);
+
+    if (start > end) {
+      alert('La fecha de inicio no puede ser posterior a la fecha de fin.');
+      return;
+    }
+
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > 365) {
+      alert('El rango máximo permitido para gráficos diarios es de 365 días.');
+      return;
+    }
+
+    this.daysPeriod = diffDays;
+    this.loadData();
+  }
+
+  exportData(): void {
+    const start = this.customStartDate || undefined;
+    const end = this.customEndDate || undefined;
+
+    this.metricsService.exportMetrics(start, end).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        const sDate = this.customStartDate || 'historico';
+        const eDate = this.customEndDate || 'actual';
+        a.download = `reporte_altoq_metricas_${sDate}_a_${eDate}.csv`;
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
       },
       error: (err) => {
-        console.error('Error al cambiar de período:', err);
-        this.isLoading = false;
+        console.error('Error al exportar métricas:', err);
+        alert('Ocurrió un error al descargar el reporte.');
       }
     });
+  }
+
+  private formatDateIso(d: Date): string {
+    const month = '' + (d.getMonth() + 1);
+    const day = '' + d.getDate();
+    const year = d.getFullYear();
+    return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
   }
 
   // Cálculos matemáticos para escalar puntos y trazar curvas SVG
@@ -212,6 +291,29 @@ export class MetricsDashboard implements OnInit {
       return `${parts[2]}/${parts[1]}`; // Retornar DD/MM
     }
     return dateStr;
+  }
+
+  shouldShowLabel(index: number): boolean {
+    const total = this.svgPoints.length;
+    if (index === 0 || index === total - 1) {
+      return true;
+    }
+    if (index === total - 2) {
+      return false;
+    }
+
+    let step = 7;
+    if (this.daysPeriod > 120) {
+      step = 30;
+    } else if (this.daysPeriod > 60) {
+      step = 14;
+    } else if (this.daysPeriod > 15) {
+      step = 7;
+    } else {
+      step = 2;
+    }
+
+    return index % step === 0;
   }
 
   // Lógica interactiva para mostrar el tooltip encima del punto sobrevolado

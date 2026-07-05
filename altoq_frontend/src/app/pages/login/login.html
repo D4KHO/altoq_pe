@@ -39,7 +39,7 @@
               id="email" 
               formControlName="email"
               placeholder="tu@ejemplo.com"
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               [class.border-red-300]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
             />
             <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" class="text-red-500 text-xs mt-1">
@@ -55,7 +55,7 @@
               id="password" 
               formControlName="password"
               placeholder="••••••••"
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               [class.border-red-300]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
             />
             <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="text-red-500 text-xs mt-1">
@@ -124,7 +124,7 @@
               id="forgotEmail" 
               formControlName="email"
               placeholder="tu@ejemplo.com"
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               [class.border-red-300]="forgotForm.get('email')?.invalid && forgotForm.get('email')?.touched"
             />
             <div *ngIf="forgotForm.get('email')?.invalid && forgotForm.get('email')?.touched" class="text-red-500 text-xs mt-1">
@@ -183,7 +183,7 @@
               id="code" 
               formControlName="code"
               placeholder="Ej. 123456"
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-center text-2xl font-bold tracking-widest"
+              class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-center text-2xl font-bold tracking-widest"
               maxlength="7"
             />
             <div *ngIf="verifyForm.get('code')?.invalid && verifyForm.get('code')?.touched" class="text-red-500 text-xs mt-1 text-center">
@@ -242,7 +242,7 @@
               id="newPassword" 
               formControlName="newPassword"
               placeholder="••••••••"
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               [class.border-red-300]="resetForm.get('newPassword')?.invalid && resetForm.get('newPassword')?.touched"
             />
             <div *ngIf="resetForm.get('newPassword')?.invalid && resetForm.get('newPassword')?.touched" class="text-red-500 text-xs mt-1">
@@ -257,7 +257,7 @@
               id="confirmPassword" 
               formControlName="confirmPassword"
               placeholder="••••••••"
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              class="w-full px-4 py-3 bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               [class.border-red-300]="(resetForm.get('confirmPassword')?.invalid || resetForm.hasError('notMatching')) && resetForm.get('confirmPassword')?.touched"
             />
             <div *ngIf="resetForm.hasError('notMatching') && resetForm.get('confirmPassword')?.touched" class="text-red-500 text-xs mt-1">

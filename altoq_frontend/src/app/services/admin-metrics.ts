@@ -52,18 +52,38 @@ export class AdminMetricsService {
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
   }
 
-  getSummary(): Observable<AdminMetricsSummary> {
+  getSummary(startDate?: string, endDate?: string): Observable<AdminMetricsSummary> {
     const headers = this.getHeaders();
-    return this.http.get<AdminMetricsSummary>(`${this.apiUrl}/summary`, { headers });
+    let url = `${this.apiUrl}/summary`;
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+    return this.http.get<AdminMetricsSummary>(url, { headers });
   }
 
-  getCharts(days: number = 30): Observable<AdminMetricChartPoint[]> {
+  getCharts(days: number = 30, startDate?: string, endDate?: string): Observable<AdminMetricChartPoint[]> {
     const headers = this.getHeaders();
-    return this.http.get<AdminMetricChartPoint[]>(`${this.apiUrl}/charts?days=${days}`, { headers });
+    let url = `${this.apiUrl}/charts?days=${days}`;
+    if (startDate && endDate) {
+      url = `${this.apiUrl}/charts?start_date=${startDate}&end_date=${endDate}`;
+    }
+    return this.http.get<AdminMetricChartPoint[]>(url, { headers });
   }
 
   getRankings(limit: number = 5): Observable<AdminStoreRanking[]> {
     const headers = this.getHeaders();
     return this.http.get<AdminStoreRanking[]>(`${this.apiUrl}/rankings?limit=${limit}`, { headers });
+  }
+
+  exportMetrics(startDate?: string, endDate?: string): Observable<Blob> {
+    const headers = this.getHeaders();
+    let url = `${this.apiUrl}/export`;
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+    return this.http.get(url, {
+      headers,
+      responseType: 'blob'
+    });
   }
 }
