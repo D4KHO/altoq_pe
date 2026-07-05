@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Transiciones para la barra lateral (Sidebar) */
+aside nav a {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Efecto hover suave */
+aside nav a:hover:not(.bg-blue-600) {
+  transform: translateX(4px);
+}
+
+/* Estilización del scrollbar de la página */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
