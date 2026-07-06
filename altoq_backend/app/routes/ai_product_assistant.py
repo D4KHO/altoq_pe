@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import traceback
+import unicodedata
 from typing import List, Optional
 
 from dotenv import load_dotenv
@@ -92,11 +94,23 @@ def _create_product_in_db(
     if not store:
         raise ValueError("Necesitas tener una tienda creada antes de publicar productos.")
 
-    slug = category.lower().replace(" ", "-")
+    slug = unicodedata.normalize('NFKD', category).encode('ascii', 'ignore').decode('utf-8')
+    slug = re.sub(r'[^a-zA-Z0-9]', '-', slug).lower()
+    slug = re.sub(r'-+', '-', slug).strip('-')
+    if not slug:
+        slug = "general"
+
     cat_obj = db.query(Category).filter(
         (Category.slug == slug) | (Category.name.ilike(f"%{category}%"))
     ).first()
-    category_id = cat_obj.id if cat_obj else None
+    
+    if not cat_obj:
+        cat_obj = Category(name=category, slug=slug)
+        db.add(cat_obj)
+        db.commit()
+        db.refresh(cat_obj)
+
+    category_id = cat_obj.id
 
     new_product = Product(
         name=name,
@@ -149,10 +163,10 @@ def chat_with_product_assistant(
         "4. Descripción detallada\n\n"
         "Reglas:\n"
         "- Saluda y pregunta qué quieren vender.\n"
-        "- Cuando el usuario describa o mencione su producto por primera vez, DEDUCE automáticamente la categoría a la que pertenece.\n"
-        f"- IMPORTANTE: La categoría deducida SOLO puede ser una de: {allowed_categories}.\n"
-        "- Dile al usuario la categoría que has asignado automáticamente y pregúntale explícitamente si esa categoría está bien o si desea asignar otra diferente.\n"
-        "- Si el usuario desea cambiar la categoría y da una opción inválida, muéstrale la lista de categorías permitidas.\n"
+        "- Cuando el usuario describa o mencione su producto por primera vez, DEDUCE automáticamente una categoría.\n"
+        f"- SUGERENCIA DE CATEGORÍA: Toma como referencia estas categorías existentes si alguna encaja: {allowed_categories}. Si ninguna encaja bien, PROPÓN una categoría nueva.\n"
+        "- Dile al usuario la categoría que has asignado automáticamente (sea existente o nueva) y pregúntale explícitamente si esa categoría está bien o si desea asignar otra diferente.\n"
+        "- CORRECCIÓN ORTOGRÁFICA: Si el usuario propone su propia categoría (o te pide cambiarla), corrígele las faltas de ortografía y usa mayúscula inicial (ej: si escribe 'zaptos', usa 'Zapatos'; si escribe 'tegnologia', usa 'Tecnología').\n"
         "- Una vez confirmada la categoría, pide los datos faltantes (Precio, Descripción) de manera amigable y UNO POR UNO.\n"
         "- Una vez que tengas los 4 datos (Nombre, Categoría, Precio, Descripción), pero falte la imagen, "
         "DEBES incluir exactamente la palabra '[REQUEST_IMAGE]' en tu respuesta y pedirle al usuario que suba una imagen de su producto usando los botones en pantalla.\n"
@@ -179,7 +193,7 @@ def chat_with_product_assistant(
                         "description": {"type": "string", "description": "Descripción del producto"},
                         "category": {
                             "type": "string", 
-                            "description": f"Categoría del producto. Debe ser exactamente una de: {allowed_categories}"
+                            "description": "Categoría del producto. Puede ser una existente o una nueva."
                         },
                         "image_url": {
                             "type": "string",
