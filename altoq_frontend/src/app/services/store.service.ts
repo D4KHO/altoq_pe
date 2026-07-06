@@ -13,6 +13,11 @@ export interface PublicStore {
   ruc?: string;
   theme?: string;
   status?: string;
+  rating?: number;
+  rating_count?: number;
+  sales?: number;
+  background_color?: string;
+  layout_type?: string;
 }
 
 @Injectable({

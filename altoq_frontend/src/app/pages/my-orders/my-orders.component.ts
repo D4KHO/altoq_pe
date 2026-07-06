@@ -7,6 +7,7 @@ import { OrderService } from '../../services/order';
 import { ToastService } from '../../services/toast.service';
 import { User } from '../../models/auth';
 import { Order } from '../../models/order';
+import { ReviewService } from '../../services/review.service';
 
 @Component({
   selector: 'app-my-orders',
@@ -28,10 +29,23 @@ export class MyOrdersComponent implements OnInit {
   ordersPageSize = 5;
   expandedOrderId: number | null = null;
 
+  // Reviews integration
+  reviewsByOrder: Record<number, any[]> = {};
+  showReviewModal = false;
+  selectedProductToReview: any = null;
+  selectedOrderToReviewId: number | null = null;
+  reviewRating = 5;
+  reviewStoreRating = 5;
+  reviewComment = '';
+  reviewImageFile: File | null = null;
+  reviewImagePreview: string | null = null;
+  isSubmittingReview = false;
+
   constructor(
     private authService: AuthService,
     private orderService: OrderService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private reviewService: ReviewService
   ) {}
 
   ngOnInit(): void {
@@ -110,6 +124,9 @@ export class MyOrdersComponent implements OnInit {
       this.expandedOrderId = null;
     } else {
       this.expandedOrderId = order.id || null;
+      if (order.status === 'completed' && order.id && !this.reviewsByOrder[order.id]) {
+        this.loadOrderReviews(order.id);
+      }
     }
   }
 
@@ -163,5 +180,117 @@ export class MyOrdersComponent implements OnInit {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     return d.toLocaleDateString('es-PE', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  loadOrderReviews(orderId: number): void {
+    this.reviewService.getOrderReviews(orderId).subscribe({
+      next: (reviews) => {
+        this.reviewsByOrder[orderId] = reviews;
+      },
+      error: (err) => {
+        console.error('Error loading order reviews:', err);
+      }
+    });
+  }
+
+  hasBeenReviewed(orderId: number, productId: number): boolean {
+    const list = this.reviewsByOrder[orderId] || [];
+    return list.some(r => Number(r.product_id) === Number(productId));
+  }
+
+  getReviewForProduct(orderId: number, productId: number): any {
+    const list = this.reviewsByOrder[orderId] || [];
+    return list.find(r => Number(r.product_id) === Number(productId));
+  }
+
+  openReviewModal(order: any, item: any): void {
+    this.selectedOrderToReviewId = order.id;
+    this.selectedProductToReview = item;
+    this.reviewRating = 5;
+    this.reviewStoreRating = 5;
+    this.reviewComment = '';
+    this.reviewImageFile = null;
+    this.reviewImagePreview = null;
+    this.showReviewModal = true;
+  }
+
+  closeReviewModal(): void {
+    this.showReviewModal = false;
+    this.selectedProductToReview = null;
+    this.selectedOrderToReviewId = null;
+  }
+
+  setReviewRating(rating: number): void {
+    this.reviewRating = rating;
+  }
+
+  setReviewStoreRating(rating: number): void {
+    this.reviewStoreRating = rating;
+  }
+
+  onReviewImageSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        this.toastService.show('Por favor selecciona una imagen válida', 'error');
+        return;
+      }
+      this.reviewImageFile = file;
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.reviewImagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  submitReview(): void {
+    if (!this.selectedProductToReview || !this.selectedOrderToReviewId) return;
+    this.isSubmittingReview = true;
+
+    const saveReview = (imageUrl?: string) => {
+      const reviewData = {
+        product_id: this.selectedProductToReview.productId,
+        order_id: this.selectedOrderToReviewId!,
+        rating: this.reviewRating,
+        store_rating: this.reviewStoreRating,
+        comment: this.reviewComment || undefined,
+        image_url: imageUrl || undefined
+      };
+
+      this.reviewService.createReview(reviewData).subscribe({
+        next: (review) => {
+          this.toastService.show('¡Reseña publicada exitosamente!', 'success');
+          
+          if (!this.reviewsByOrder[this.selectedOrderToReviewId!]) {
+            this.reviewsByOrder[this.selectedOrderToReviewId!] = [];
+          }
+          this.reviewsByOrder[this.selectedOrderToReviewId!].push(review);
+          
+          this.isSubmittingReview = false;
+          this.closeReviewModal();
+        },
+        error: (err) => {
+          console.error('Error submitting review:', err);
+          this.toastService.show('Error al publicar la reseña: ' + (err.error?.detail || err.message), 'error');
+          this.isSubmittingReview = false;
+        }
+      });
+    };
+
+    if (this.reviewImageFile) {
+      this.reviewService.uploadReviewImage(this.reviewImageFile).subscribe({
+        next: (res) => {
+          saveReview(res.image_url);
+        },
+        error: (err) => {
+          console.error('Error uploading review image:', err);
+          this.toastService.show('Error al subir la imagen, guardando reseña sin foto...', 'info');
+          saveReview();
+        }
+      });
+    } else {
+      saveReview();
+    }
   }
 }

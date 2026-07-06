@@ -8,10 +8,11 @@ from ..models.order import Order as OrderModel
 from ..models.product import Product
 from ..models.delivery_code import DeliveryCode
 from ..schemas.user import UserUpdate, UserRole
-from ..schemas.store import StoreCreate, StoreResponse
+from ..schemas.store import StoreCreate, StoreResponse, StoreUpdate
 from ..schemas.order import Order as OrderSchema
 from ..dependencies import get_current_user
 from .orders import _populate_order_product_names
+from .stores import _calculate_store_rating_and_sales
 
 router = APIRouter(prefix="/api/seller", tags=["seller"])
 
@@ -77,6 +78,21 @@ def switch_role(
     
     return {"message": f"Rol cambiado a {role}", "role": user.role}
 
+def _calculate_seller_unique_clients(db: Session, store_id: int) -> int:
+    completed_orders = db.query(OrderModel).filter(OrderModel.status == "completed").all()
+    client_ids = set()
+    for order in completed_orders:
+        products_json = order.products or []
+        for p in products_json:
+            if isinstance(p, dict):
+                p_id = p.get("productId")
+                if p_id:
+                    prod = db.query(Product).filter(Product.id == p_id).first()
+                    if prod and prod.store_id == store_id:
+                        client_ids.add(order.user_id)
+    return len(client_ids)
+
+
 @router.get("/my-store")
 def get_my_store(
     current_user_email: str = Depends(get_current_user),
@@ -91,6 +107,43 @@ def get_my_store(
     if not store:
         raise HTTPException(status_code=404, detail="El usuario no tiene una tienda")
     
+    rating, rating_count, sales = _calculate_store_rating_and_sales(db, store.id)
+    clients = _calculate_seller_unique_clients(db, store.id)
+    store.rating = rating
+    store.rating_count = rating_count
+    store.sales = sales
+    store.clients = clients
+    return StoreResponse.model_validate(store)
+
+
+@router.put("/my-store", response_model=StoreResponse)
+def update_my_store(
+    store_data: StoreUpdate,
+    current_user_email: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Permite al vendedor actualizar la información de su tienda"""
+    user = db.query(User).filter(User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    store = db.query(Store).filter(Store.user_id == user.id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="No tienes una tienda registrada")
+
+    # Actualizar campos
+    for key, value in store_data.dict(exclude_unset=True).items():
+        setattr(store, key, value)
+
+    db.commit()
+    db.refresh(store)
+    
+    rating, rating_count, sales = _calculate_store_rating_and_sales(db, store.id)
+    clients = _calculate_seller_unique_clients(db, store.id)
+    store.rating = rating
+    store.rating_count = rating_count
+    store.sales = sales
+    store.clients = clients
     return StoreResponse.model_validate(store)
 
 

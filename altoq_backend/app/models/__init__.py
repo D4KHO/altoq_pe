@@ -29,6 +29,9 @@ from .store_metric import StoreMetric
 # Consultas de tienda
 from .inquiry import StoreInquiry
 
+# Reseñas
+from .review import Review
+
 __all__ = [
     "Base",
     "Admin",
@@ -46,4 +49,5 @@ __all__ = [
     "TemplateField",
     "StoreMetric",
     "StoreInquiry",
+    "Review",
 ]

@@ -1,14 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { StoreService, PublicStore } from '../../services/store.service';
 import { CartService } from '../../services/cart';
+import { AuthService } from '../../services/auth.service';
+import { SellerService } from '../../services/seller.service';
 import { ProductCard } from '../../components/product-card/product-card';
 
 @Component({
   selector: 'app-store-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductCard],
+  imports: [CommonModule, RouterLink, ProductCard, FormsModule],
   templateUrl: './store-page.component.html',
   styleUrls: ['./store-page.component.css']
 })
@@ -18,11 +21,18 @@ export class StorePageComponent implements OnInit {
   isLoading = true;
   errorMessage = '';
 
+  // Live personalization variables
+  isEditing = false;
+  tempStore: any = null;
+  isSaving = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private storeService: StoreService,
-    private cartService: CartService
+    private cartService: CartService,
+    private authService: AuthService,
+    private sellerService: SellerService
   ) {}
 
   ngOnInit(): void {
@@ -77,6 +87,12 @@ export class StorePageComponent implements OnInit {
   }
 
   getThemeGradient(): string {
+    const customBgColor = this.isEditing ? this.tempStore?.background_color : this.store?.background_color;
+    if (customBgColor && customBgColor !== '#f8fafc' && customBgColor !== '') {
+      return customBgColor;
+    }
+
+    const themeToUse = this.isEditing ? this.tempStore?.theme : this.store?.theme;
     const gradients: Record<string, string> = {
       bakery: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
       fashion: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -85,6 +101,52 @@ export class StorePageComponent implements OnInit {
       tech: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
       default: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     };
-    return gradients[this.store?.theme ?? 'default'] ?? gradients['default'];
+    return gradients[themeToUse ?? 'default'] ?? gradients['default'];
+  }
+
+  getLayoutClass(): string {
+    const layout = this.isEditing ? this.tempStore?.layout_type : this.store?.layout_type;
+    return `layout-${layout ?? 'grid-3'}`;
+  }
+
+  getBackgroundColor(): string {
+    return '#f8fafc';
+  }
+
+  // Personalization logic
+  isOwner(): boolean {
+    const user = this.authService.userValue;
+    return !!(user && this.store && user.store_id === this.store.id);
+  }
+
+  startEditing(): void {
+    if (!this.store) return;
+    this.tempStore = { ...this.store };
+    this.isEditing = true;
+  }
+
+  cancelEditing(): void {
+    this.isEditing = false;
+    this.tempStore = null;
+  }
+
+  saveDesignChanges(): void {
+    if (!this.tempStore) return;
+    this.isSaving = true;
+    this.sellerService.updateStore(this.tempStore).subscribe({
+      next: (updatedStore) => {
+        this.store = {
+          ...this.store,
+          ...updatedStore
+        };
+        this.isEditing = false;
+        this.tempStore = null;
+        this.isSaving = false;
+      },
+      error: (err) => {
+        console.error('Error saving store changes:', err);
+        this.isSaving = false;
+      }
+    });
   }
 }

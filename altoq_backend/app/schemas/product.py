@@ -12,6 +12,7 @@ class ProductBase(BaseModel):
     rating: float = 0.0
     rating_count: int = 0
     stock: int = 0
+    sales: Optional[int] = 0
     specifications: Optional[Dict[str, str]] = None
     store_id: Optional[int] = None
     category_id: Optional[int] = None

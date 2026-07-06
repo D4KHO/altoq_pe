@@ -10,6 +10,7 @@ import { MapboxService } from '../../services/mapbox.service';
 import { DeliveryService } from '../../services/delivery.service';
 import { User } from '../../models/auth';
 import { Order } from '../../models/order';
+import { ReviewService } from '../../services/review.service';
 
 @Component({
   selector: 'app-order-detail',
@@ -38,6 +39,17 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   sellerMarker: any = null;
   trackingInterval: any = null;
 
+  // Reviews logic
+  orderReviews: any[] = [];
+  showReviewModal = false;
+  selectedProductToReview: any = null;
+  reviewRating = 5;
+  reviewStoreRating = 5;
+  reviewComment = '';
+  reviewImageFile: File | null = null;
+  reviewImagePreview: string | null = null;
+  isSubmittingReview = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -46,7 +58,8 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
     private chatService: ChatService,
     private toastService: ToastService,
     private mapboxService: MapboxService,
-    private deliveryService: DeliveryService
+    private deliveryService: DeliveryService,
+    private reviewService: ReviewService
   ) {}
 
   ngOnInit(): void {
@@ -89,6 +102,11 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
         // Open chat initially if the order is not canceled
         if (order.status !== 'canceled') {
           this.initOrderChat(order);
+        }
+
+        // Load reviews if the order is completed
+        if (order.status === 'completed') {
+          this.loadOrderReviews();
         }
       },
       error: (err) => {
@@ -411,5 +429,109 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     return d.toLocaleDateString('es-PE', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  loadOrderReviews(): void {
+    this.reviewService.getOrderReviews(this.orderId).subscribe({
+      next: (reviews) => {
+        this.orderReviews = reviews;
+      },
+      error: (err) => {
+        console.error('Error loading order reviews:', err);
+      }
+    });
+  }
+
+  hasBeenReviewed(productId: number): boolean {
+    return this.orderReviews.some(r => Number(r.product_id) === Number(productId));
+  }
+
+  getReviewForProduct(productId: number): any {
+    return this.orderReviews.find(r => Number(r.product_id) === Number(productId));
+  }
+
+  openReviewModal(product: any): void {
+    this.selectedProductToReview = product;
+    this.reviewRating = 5;
+    this.reviewStoreRating = 5;
+    this.reviewComment = '';
+    this.reviewImageFile = null;
+    this.reviewImagePreview = null;
+    this.showReviewModal = true;
+  }
+
+  closeReviewModal(): void {
+    this.showReviewModal = false;
+    this.selectedProductToReview = null;
+  }
+
+  setReviewRating(rating: number): void {
+    this.reviewRating = rating;
+  }
+
+  setReviewStoreRating(rating: number): void {
+    this.reviewStoreRating = rating;
+  }
+
+  onReviewImageSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        this.toastService.show('Por favor selecciona una imagen válida', 'error');
+        return;
+      }
+      this.reviewImageFile = file;
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.reviewImagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  submitReview(): void {
+    if (!this.selectedProductToReview) return;
+    this.isSubmittingReview = true;
+
+    const saveReview = (imageUrl?: string) => {
+      const reviewData = {
+        product_id: this.selectedProductToReview.productId,
+        order_id: this.orderId,
+        rating: this.reviewRating,
+        store_rating: this.reviewStoreRating,
+        comment: this.reviewComment || undefined,
+        image_url: imageUrl || undefined
+      };
+
+      this.reviewService.createReview(reviewData).subscribe({
+        next: (review) => {
+          this.toastService.show('¡Reseña publicada exitosamente!', 'success');
+          this.orderReviews.push(review);
+          this.loadOrderReviews();
+          this.isSubmittingReview = false;
+          this.closeReviewModal();
+        },
+        error: (err) => {
+          console.error('Error submitting review:', err);
+          this.toastService.show('Error al publicar la reseña: ' + (err.error?.detail || err.message), 'error');
+          this.isSubmittingReview = false;
+        }
+      });
+    };
+
+    if (this.reviewImageFile) {
+      this.reviewService.uploadReviewImage(this.reviewImageFile).subscribe({
+        next: (res) => {
+          saveReview(res.image_url);
+        },
+        error: (err) => {
+          console.error('Error uploading review image:', err);
+          this.toastService.show('Error al subir la imagen, guardando reseña sin foto...', 'info');
+          saveReview();
+        }
+      });
+    } else {
+      saveReview();
+    }
   }
 }

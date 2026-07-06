@@ -4,9 +4,24 @@ from typing import List
 from ..database import get_db
 from ..models.product import Product as ProductModel
 from ..models.category import Category as CategoryModel
+from ..models.order import Order as OrderModel
 from ..schemas.product import ProductResponse as Product, ProductCreate, ProductUpdate
 
 router = APIRouter(prefix="/api/products", tags=["products"])
+
+
+def _populate_product_sales(db: Session, product: ProductModel):
+    # Calcular cantidad de ventas en pedidos completados
+    completed_orders = db.query(OrderModel).filter(OrderModel.status == "completed").all()
+    sales_count = 0
+    for order in completed_orders:
+        products_json = order.products or []
+        for p in products_json:
+            if isinstance(p, dict) and p.get("productId") == product.id:
+                sales_count += p.get("quantity", 1)
+    product.sales = sales_count
+    return product
+
 
 @router.get("/category/{slug}", response_model=List[Product])
 def get_products_by_category(slug: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -16,7 +31,10 @@ def get_products_by_category(slug: str, skip: int = 0, limit: int = 100, db: Ses
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
     products = db.query(ProductModel).filter(ProductModel.category_id == category.id).offset(skip).limit(limit).all()
+    for p in products:
+        _populate_product_sales(db, p)
     return products
+
 
 @router.get("/search", response_model=List[Product])
 def search_products(q: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -29,13 +47,19 @@ def search_products(q: str, skip: int = 0, limit: int = 100, db: Session = Depen
         (ProductModel.name.ilike(search_query)) | 
         (ProductModel.description.ilike(search_query))
     ).offset(skip).limit(limit).all()
+    for p in products:
+        _populate_product_sales(db, p)
     return products
+
 
 @router.get("/", response_model=List[Product])
 def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Obtener lista de productos"""
     products = db.query(ProductModel).order_by(ProductModel.id.desc()).offset(skip).limit(limit).all()
+    for p in products:
+        _populate_product_sales(db, p)
     return products
+
 
 @router.get("/{product_id}", response_model=Product)
 def get_product(product_id: int, db: Session = Depends(get_db)):
@@ -43,7 +67,9 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
+    _populate_product_sales(db, product)
     return product
+
 
 @router.post("/", response_model=Product)
 def create_product(product: ProductCreate, db: Session = Depends(get_db)):
@@ -53,6 +79,7 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_product)
     return db_product
+
 
 @router.put("/{product_id}", response_model=Product)
 def update_product(product_id: int, product: ProductUpdate, db: Session = Depends(get_db)):
@@ -66,7 +93,9 @@ def update_product(product_id: int, product: ProductUpdate, db: Session = Depend
     
     db.commit()
     db.refresh(db_product)
+    _populate_product_sales(db, db_product)
     return db_product
+
 
 @router.delete("/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db)):
