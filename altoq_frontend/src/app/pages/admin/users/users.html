@@ -75,7 +75,7 @@
                       'bg-indigo-50 text-indigo-600 border border-indigo-100/50': user.role.toLowerCase() === 'buyer',
                       'bg-slate-900 text-white border border-slate-950': user.role.toLowerCase() === 'admin'
                     }">
-                {{ user.role || 'BUYER' }}
+                {{ translateRole(user.role) }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-500">{{ user.phone || 'N/A' }}</td>
@@ -240,7 +240,7 @@
           <div>
             <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest">Rol asignado</span>
             <span class="px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded bg-indigo-50 text-indigo-600 border border-indigo-100/30 inline-block mt-0.5">
-              {{ detailedUser?.role || 'BUYER' }}
+              {{ translateRole(detailedUser?.role) }}
             </span>
           </div>
           <div>
