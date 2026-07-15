@@ -226,4 +226,15 @@ export class Users implements OnInit {
       }
     });
   }
+
+  translateRole(role: string | undefined): string {
+    if (!role) return 'Comprador';
+    switch (role.toUpperCase()) {
+      case 'BUYER': return 'Comprador';
+      case 'SELLER': return 'Vendedor';
+      case 'BOTH': return 'Ambos';
+      case 'ADMIN': return 'Administrador';
+      default: return role;
+    }
+  }
 }
