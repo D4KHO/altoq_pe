@@ -89,3 +89,36 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         )
     
     return email
+
+
+# --- SECURITY & RATE LIMITING ENHANCEMENTS ---
+from collections import defaultdict
+import time
+import hashlib
+
+class InMemoryRateLimiter:
+    def __init__(self, requests_limit: int, window_seconds: int):
+        self.limit = requests_limit
+        self.window = window_seconds
+        # Map IP -> list of request timestamps
+        self.requests = defaultdict(list)
+        
+    def is_allowed(self, ip: str) -> bool:
+        now = time.time()
+        # Clean up older timestamps outside the time window
+        self.requests[ip] = [t for t in self.requests[ip] if now - t < self.window]
+        
+        if len(self.requests[ip]) >= self.limit:
+            return False
+            
+        self.requests[ip].append(now)
+        return True
+
+# Rate limiters instances
+login_rate_limiter = InMemoryRateLimiter(requests_limit=5, window_seconds=60)
+recovery_rate_limiter = InMemoryRateLimiter(requests_limit=3, window_seconds=300)
+
+def hash_recovery_code(code: str) -> str:
+    """Hashea un código de recuperación de 6 dígitos a 10 caracteres para ajustarse a la BD"""
+    return hashlib.sha256(code.encode('utf-8')).hexdigest()[:10]
+

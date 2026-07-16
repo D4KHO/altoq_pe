@@ -38,18 +38,68 @@ def get_products_by_category(slug: str, skip: int = 0, limit: int = 100, db: Ses
 
 @router.get("/search", response_model=List[Product])
 def search_products(q: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Buscar productos por nombre o descripción"""
+    """Buscar productos por nombre o descripción con soporte de múltiples palabras y relevancia"""
     if not q:
         return []
     
-    search_query = f"%{q}%"
-    products = db.query(ProductModel).filter(
-        (ProductModel.name.ilike(search_query)) | 
-        (ProductModel.description.ilike(search_query))
-    ).offset(skip).limit(limit).all()
-    for p in products:
+    from sqlalchemy import and_
+    
+    # Limpiar y separar en palabras de búsqueda
+    search_query = q.strip()
+    words = [w.lower() for w in search_query.split() if w.strip()]
+    if not words:
+        return []
+    
+    # Construir filtros para que TODAS las palabras ingresadas coincidan parcial o totalmente
+    filters = []
+    for word in words:
+        filters.append(
+            (ProductModel.name.ilike(f"%{word}%")) | 
+            (ProductModel.description.ilike(f"%{word}%"))
+        )
+    
+    # Consultar base de datos limitando a 500 resultados para ordenar por relevancia en memoria
+    raw_products = db.query(ProductModel).filter(and_(*filters)).limit(500).all()
+    
+    # Calcular relevancia (scoring) en memoria
+    scored_products = []
+    for p in raw_products:
+        name_lower = p.name.lower()
+        desc_lower = (p.description or "").lower()
+        q_lower = search_query.lower()
+        
+        score = 0
+        
+        # 1. Coincidencia exacta de la consulta completa en el nombre (mayor prioridad)
+        if q_lower in name_lower:
+            score += 1000
+            if name_lower == q_lower:
+                score += 500
+        
+        # 2. Coincidencia de palabras individuales en el nombre
+        words_in_name = sum(1 for w in words if w in name_lower)
+        score += (words_in_name / len(words)) * 500
+        
+        # 3. Coincidencia exacta de la consulta completa en la descripción
+        if q_lower in desc_lower:
+            score += 200
+        
+        # 4. Coincidencia de palabras individuales en la descripción
+        words_in_desc = sum(1 for w in words if w in desc_lower)
+        score += (words_in_desc / len(words)) * 100
+        
+        scored_products.append((p, score))
+    
+    # Ordenar por relevancia descendente
+    scored_products.sort(key=lambda item: item[1], reverse=True)
+    
+    # Extraer los productos ordenados, poblar ventas y aplicar paginación
+    paginated_products = []
+    for p, score in scored_products[skip : skip + limit]:
         _populate_product_sales(db, p)
-    return products
+        paginated_products.append(p)
+        
+    return paginated_products
 
 
 @router.get("/", response_model=List[Product])
