@@ -28,9 +28,34 @@ input[type="password"]:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* Estilos de marcador de posición (placeholder) para mejor diferenciación */
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.65 !important;
+  font-weight: 300 !important;
+}
+
+/* Los campos vacíos (mostrando placeholder) tienen un fondo sutilmente opaco/grisáceo */
+input:placeholder-shown,
+textarea:placeholder-shown {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Transición a fondo blanco puro cuando se escribe o el campo obtiene foco */
+input:not(:placeholder-shown),
+textarea:not(:placeholder-shown),
+input:focus,
+textarea:focus {
+  background-color: #ffffff !important;
+}
+
 /* Inputs deshabilitados */
 input:disabled {
-  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+  background: linear-gradient(to bottom, #f1f5f9, #e2e8f0) !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
 }
 
 /* Transiciones suaves */

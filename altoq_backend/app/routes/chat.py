@@ -211,6 +211,22 @@ def send_message(
     if not chat.is_active:
         raise HTTPException(status_code=400, detail="Este chat está cerrado")
     
+    # Control de seguridad: Impedir enviar el código de entrega por chat
+    if chat.order_id:
+        from ..models.delivery_code import DeliveryCode
+        delivery_code = db.query(DeliveryCode).filter(
+            DeliveryCode.order_id == chat.order_id,
+            DeliveryCode.is_used == False
+        ).first()
+        if delivery_code and delivery_code.code:
+            clean_content = message_data.content.replace(" ", "").replace("-", "").lower()
+            clean_code = delivery_code.code.replace(" ", "").replace("-", "").lower()
+            if clean_code in clean_content:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Por motivos de seguridad, está prohibido compartir el código de entrega por chat. Debes dárselo al vendedor en persona al recibir el producto."
+                )
+    
     # Crear mensaje
     new_message = Message(
         chat_id=chat_id,

@@ -6,13 +6,14 @@ import { CategoryService } from '../../services/category.service';
 import { Product } from '../../models/product';
 import { Category } from '../../models/category';
 import { ProductCard } from '../../components/product-card/product-card';
+import { CategoryIconComponent } from '../../components/category-icon/category-icon';
 import { CartService } from '../../services/cart';
 import { Observable, switchMap, tap } from 'rxjs';
 
 @Component({
   selector: 'app-category',
   standalone: true,
-  imports: [CommonModule, ProductCard],
+  imports: [CommonModule, ProductCard, CategoryIconComponent],
   templateUrl: './category.html',
   styleUrl: './category.css'
 })

@@ -380,6 +380,10 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error sending chat message:', err);
         this.newChatMessage = content;
+        
+        // Mostrar mensaje de error del backend (como la alerta de seguridad)
+        const errorMsg = err.error?.detail || 'No se pudo enviar el mensaje.';
+        this.toastService.show(errorMsg, 'error');
       }
     });
   }

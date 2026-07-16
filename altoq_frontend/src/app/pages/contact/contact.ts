@@ -29,7 +29,7 @@ export class ContactComponent {
 
     // Simulate sending (replace with real API call if needed)
     setTimeout(() => {
-      this.toastService.show('✅ ¡Mensaje enviado! Te responderemos a la brevedad.', 'success');
+      this.toastService.show('¡Mensaje enviado! Te responderemos a la brevedad.', 'success');
       this.name = '';
       this.email = '';
       this.subject = '';

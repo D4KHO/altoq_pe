@@ -382,3 +382,43 @@
   height: 16px;
   flex-shrink: 0;
 }
+
+/* Security Warning Banner */
+.security-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fffbeb;
+  border-bottom: 1.5px solid #fde047;
+  padding: 12px 20px;
+  color: #b45309;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  animation: fadeInChat 0.3s ease-out;
+}
+
+.security-banner-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #fef3c7;
+  border-radius: 50%;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.security-banner-text {
+  font-weight: 500;
+}
+
+.security-banner-text strong {
+  font-weight: 700;
+  color: #92400e;
+}
+
+@keyframes fadeInChat {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
