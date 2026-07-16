@@ -1,4 +1,4 @@
-<div class="store-page-bg">
+<div class="store-page-bg" [style.background]="getBackgroundColor()">
 
   <!-- Loading -->
   <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-32">
@@ -18,26 +18,119 @@
   <!-- Store Content -->
   <div *ngIf="!isLoading && store">
 
+    <!-- Owner Administration Toolbar -->
+    <div *ngIf="isOwner()" class="bg-indigo-950 text-white py-3 px-4 shadow flex flex-wrap items-center justify-between gap-3 border-b border-white/10">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-xs font-black tracking-wider uppercase text-slate-200">Panel de Personalización en Vivo (Modo Vendedor)</span>
+      </div>
+      <div class="flex gap-2">
+        <button *ngIf="!isEditing" (click)="startEditing()" class="bg-white hover:bg-slate-100 text-indigo-950 px-3.5 py-1.5 rounded-xl font-black text-xs transition cursor-pointer border-0 select-none">
+          Personalizar Aspecto
+        </button>
+        <button *ngIf="isEditing" (click)="cancelEditing()" class="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition cursor-pointer border-0 select-none">
+          Cancelar
+        </button>
+        <button *ngIf="isEditing" (click)="saveDesignChanges()" [disabled]="isSaving" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-xl font-black text-xs transition cursor-pointer border-0 select-none flex items-center gap-1.5 disabled:opacity-50">
+          <svg *ngIf="isSaving" class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+          {{ isSaving ? 'Guardando...' : 'Confirmar y Guardar' }}
+        </button>
+      </div>
+    </div>
+
     <!-- Banner -->
     <div class="store-banner" [style.background]="getThemeGradient()">
-      <div class="store-banner-overlay">
-        <div class="max-w-6xl mx-auto px-4 py-8 flex items-end gap-6">
+      <div class="store-banner-overlay" [style.min-height]="isEditing ? '300px' : '180px'">
+        <div class="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-start md:items-end gap-6 w-full">
 
           <!-- Logo -->
-          <div class="store-logo-wrapper">
-            <img *ngIf="store.logo" [src]="store.logo" [alt]="store.name" class="w-full h-full object-cover rounded-xl">
-            <div *ngIf="!store.logo" class="w-full h-full flex items-center justify-center bg-white/20 rounded-xl">
+          <div class="store-logo-wrapper shrink-0">
+            <img *ngIf="isEditing ? tempStore.logo : store.logo" [src]="isEditing ? tempStore.logo : store.logo" [alt]="store.name" class="w-full h-full object-cover rounded-xl">
+            <div *ngIf="!(isEditing ? tempStore.logo : store.logo)" class="w-full h-full flex items-center justify-center bg-white/20 rounded-xl">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               </svg>
             </div>
           </div>
 
-          <!-- Info -->
-          <div class="text-white pb-1">
+          <!-- Info (Normal Mode) -->
+          <div class="text-white pb-1 flex-grow min-w-0" *ngIf="!isEditing">
             <h1 class="text-3xl font-bold drop-shadow">{{ store.name }}</h1>
-            <p *ngIf="store.description" class="text-white/80 text-sm mt-1 max-w-lg">{{ store.description }}</p>
+            <p *ngIf="store.description" class="text-white/80 text-sm mt-1 max-w-lg leading-relaxed">{{ store.description }}</p>
+            
+            <!-- Stars & sales in banner -->
+            <div class="flex items-center gap-2 mt-3 text-xs font-bold text-white flex-wrap">
+              <span class="bg-black/35 backdrop-blur-[2px] px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm border border-white/10">
+                <span class="text-amber-300 font-black text-sm">{{ (store.rating | number:'1.1-1') || '0.0' }}</span>
+                <span class="flex gap-0.5 text-amber-300">
+                  <svg *ngFor="let s of [1,2,3,4,5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5" [class.text-amber-300]="s <= (store.rating || 0)" [class.text-white/25]="s > (store.rating || 0)">
+                    <path fill-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.6 3.102-1.1 4.622c-.237.996.84 1.746 1.705 1.19L10 15.655l4.137 2.576c.865.556 1.942-.194 1.706-1.19l-1.1-4.622 3.6-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+                <span class="text-white/70">({{ store.rating_count || 0 }} valoraciones)</span>
+              </span>
+              <span class="bg-black/35 backdrop-blur-[2px] px-3 py-1.5 rounded-xl text-white/90 shadow-sm border border-white/10">
+                {{ store.sales || 0 }} ventas completadas
+              </span>
+            </div>
           </div>
+
+          <!-- Live Editing Mode in Banner -->
+          <div class="text-white pb-1 flex-grow min-w-0 space-y-4 w-full" *ngIf="isEditing">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[9px] uppercase font-black tracking-widest text-white/60">Nombre de la Tienda:</label>
+                <input type="text" [(ngModel)]="tempStore.name" class="bg-white/10 backdrop-blur border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-white/50 w-full">
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[9px] uppercase font-black tracking-widest text-white/60">Eslogan / Descripción:</label>
+                <input type="text" [(ngModel)]="tempStore.description" class="bg-white/10 backdrop-blur border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-white/50 w-full">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[9px] uppercase font-black tracking-widest text-white/60">Enlace de Logo (URL):</label>
+                <input type="text" [(ngModel)]="tempStore.logo" class="bg-white/10 backdrop-blur border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-white/50 w-full" placeholder="https://ejemplo.com/logo.png">
+              </div>
+              
+              <div class="grid grid-cols-3 gap-2">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-[9px] uppercase font-black tracking-widest text-white/60">Fondo:</label>
+                  <div class="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-xl px-2 py-1">
+                    <input type="color" [(ngModel)]="tempStore.background_color" class="w-6 h-6 rounded border-0 cursor-pointer p-0 bg-transparent shrink-0">
+                    <input type="text" [(ngModel)]="tempStore.background_color" class="bg-transparent border-0 text-xs text-white focus:outline-none w-14 p-0">
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-[9px] uppercase font-black tracking-widest text-white/60">Banner:</label>
+                  <select [(ngModel)]="tempStore.theme" class="bg-slate-800 border border-white/20 rounded-xl px-2 py-1.5 text-xs text-white focus:outline-none">
+                    <option value="default">Por Defecto</option>
+                    <option value="tech">Tecnología</option>
+                    <option value="food">Comida</option>
+                    <option value="fashion">Moda</option>
+                    <option value="home">Hogar</option>
+                    <option value="bakery">Pastelería</option>
+                  </select>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-[9px] uppercase font-black tracking-widest text-white/60">Diseño:</label>
+                  <select [(ngModel)]="tempStore.layout_type" class="bg-slate-800 border border-white/20 rounded-xl px-2 py-1.5 text-xs text-white focus:outline-none">
+                    <option value="grid-2">2 Cols</option>
+                    <option value="grid-3">3 Cols</option>
+                    <option value="grid-4">4 Cols</option>
+                    <option value="list">Lista</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -88,7 +181,7 @@
       </div>
 
       <!-- Products grid using the standard product-card component -->
-      <div *ngIf="storeProducts.length > 0" class="products-grid">
+      <div *ngIf="storeProducts.length > 0" class="products-grid" [ngClass]="getLayoutClass()">
         <app-product-card
           *ngFor="let product of storeProducts"
           [product]="product"

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from google.oauth2 import id_token
@@ -6,7 +6,7 @@ from google.auth.transport import requests
 from ..database import get_db
 from ..models.user import User as UserModel
 from ..schemas.user import UserCreate, UserLogin, Token, User, ForgotPasswordRequest, VerifyCodeRequest, ResetPasswordRequest
-from ..utils.security import verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from ..utils.security import verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, login_rate_limiter, recovery_rate_limiter, hash_recovery_code
 import os
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -76,8 +76,16 @@ def google_login(token_data: dict, db: Session = Depends(get_db)):
 
 
 @router.post("/register", response_model=Token)
-def register(user: UserCreate, db: Session = Depends(get_db)):
+def register(user: UserCreate, request: Request, db: Session = Depends(get_db)):
     """Registrar un nuevo usuario"""
+    # Rate limit check
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    if not login_rate_limiter.is_allowed(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos de registro. Por favor, intente de nuevo más tarde."
+        )
+
     # Verificar si el email ya existe
     db_user = db.query(UserModel).filter(UserModel.email == user.email).first()
     if db_user:
@@ -108,8 +116,16 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     }
 
 @router.post("/login", response_model=Token)
-def login(credentials: UserLogin, db: Session = Depends(get_db)):
+def login(credentials: UserLogin, request: Request, db: Session = Depends(get_db)):
     """Iniciar sesión"""
+    # Rate limit check
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    if not login_rate_limiter.is_allowed(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos de inicio de sesión. Por favor, intente de nuevo en un minuto."
+        )
+
     print(f"DEBUG LOGIN: email={credentials.email}, password={credentials.password}")
     # Buscar usuario por email
     db_user = db.query(UserModel).filter(UserModel.email == credentials.email).first()
@@ -136,8 +152,16 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/forgot-password")
-def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password(req: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)):
     """Solicitar recuperación de contraseña (envía un código de 6 dígitos)"""
+    # Rate limit check
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    if not recovery_rate_limiter.is_allowed(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas solicitudes de recuperación. Por favor, intente de nuevo más tarde."
+        )
+
     # 1. Verificar si el usuario existe
     db_user = db.query(UserModel).filter(UserModel.email == req.email).first()
     if not db_user:
@@ -146,6 +170,7 @@ def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
     # 2. Generar código de 6 dígitos
     import random
     code = f"{random.randint(100000, 999999)}"
+    hashed_code = hash_recovery_code(code)
 
     # 3. Invalidar códigos anteriores no usados para este email
     from datetime import datetime, timedelta
@@ -160,13 +185,13 @@ def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
     expires_at = datetime.utcnow() + timedelta(minutes=15)
     reset_entry = PasswordResetCode(
         email=req.email,
-        code=code,
+        code=hashed_code,
         expires_at=expires_at
     )
     db.add(reset_entry)
     db.commit()
 
-    # 5. Enviar correo (o simular en desarrollo)
+    # 5. Enviar correo (o simular en desarrollo) con el código original (sin hashear)
     from ..utils.email import send_recovery_email
     send_recovery_email(req.email, code)
 
@@ -174,15 +199,25 @@ def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/verify-code")
-def verify_code(req: VerifyCodeRequest, db: Session = Depends(get_db)):
+def verify_code(req: VerifyCodeRequest, request: Request, db: Session = Depends(get_db)):
     """Verificar si el código es correcto y no ha expirado"""
+    # Rate limit check
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    if not recovery_rate_limiter.is_allowed(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos de verificación. Por favor, intente de nuevo más tarde."
+        )
+
     from datetime import datetime
     from ..models.password_reset import PasswordResetCode
+
+    hashed_input_code = hash_recovery_code(req.code)
 
     # Buscar código válido
     db_code = db.query(PasswordResetCode).filter(
         PasswordResetCode.email == req.email,
-        PasswordResetCode.code == req.code,
+        PasswordResetCode.code == hashed_input_code,
         PasswordResetCode.is_used == False,
         PasswordResetCode.expires_at > datetime.utcnow()
     ).order_by(PasswordResetCode.id.desc()).first()
@@ -194,15 +229,25 @@ def verify_code(req: VerifyCodeRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/reset-password")
-def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+def reset_password(req: ResetPasswordRequest, request: Request, db: Session = Depends(get_db)):
     """Cambiar la contraseña usando el código verificado"""
+    # Rate limit check
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    if not recovery_rate_limiter.is_allowed(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos de cambio de contraseña. Por favor, intente de nuevo más tarde."
+        )
+
     from datetime import datetime
     from ..models.password_reset import PasswordResetCode
+
+    hashed_input_code = hash_recovery_code(req.code)
 
     # 1. Validar el código de nuevo
     db_code = db.query(PasswordResetCode).filter(
         PasswordResetCode.email == req.email,
-        PasswordResetCode.code == req.code,
+        PasswordResetCode.code == hashed_input_code,
         PasswordResetCode.is_used == False,
         PasswordResetCode.expires_at > datetime.utcnow()
     ).order_by(PasswordResetCode.id.desc()).first()

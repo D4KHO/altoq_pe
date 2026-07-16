@@ -126,7 +126,7 @@
 					<div class="h-5 w-[1px] bg-white/25"></div>
 
 					<!-- Cart -->
-					<a routerLink="/cart" class="relative inline-flex h-9 w-9 items-center justify-center text-white hover:opacity-90 transition-all duration-200 cursor-pointer">
+					<a routerLink="/cart" routerLinkActive="bg-white/20 rounded-lg" class="relative inline-flex h-9 w-9 items-center justify-center text-white hover:opacity-90 transition-all duration-200 cursor-pointer">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
 						</svg>
@@ -180,8 +180,9 @@
 							<div class="border-t border-slate-100 my-1"></div>
 							<a *ngFor="let category of categories" [routerLink]="['/category', category.slug]" (click)="closeCategoriesDropdown()"
 								class="flex items-center px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors group">
-								<div class="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm mr-2.5 shrink-0 group-hover:bg-blue-100/70 transition-colors">
-									{{category.icon}}</div>
+								<div class="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mr-2.5 shrink-0 group-hover:bg-blue-100/70 transition-colors">
+									<app-category-icon [slug]="category.slug" iconClass="h-4.5 w-4.5"></app-category-icon>
+								</div>
 								<span class="font-semibold">{{ category.name }}</span>
 							</a>
 						</div>

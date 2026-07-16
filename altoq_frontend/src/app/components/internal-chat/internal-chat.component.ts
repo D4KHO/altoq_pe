@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ChatService } from '../../services/chat.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-internal-chat',
@@ -23,7 +24,8 @@ export class InternalChatComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -110,6 +112,10 @@ export class InternalChatComponent implements OnInit {
           console.error('Error sending message:', error);
           // Remove the optimistic message on error
           this.messages.pop();
+          
+          // Mostrar mensaje de error del backend (como la alerta de seguridad) en el Toast
+          const errorMsg = error.error?.detail || 'No se pudo enviar el mensaje.';
+          this.toastService.show(errorMsg, 'error');
         }
       });
     }

@@ -1,19 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { SellerService } from '../../services/seller.service';
 import { ProductService } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
 import { AuthService } from '../../services/auth.service';
 import { ChatService } from '../../services/chat.service';
+import { ReviewService } from '../../services/review.service';
 
 import { ConversationalAssistantComponent } from '../../components/conversational-assistant/conversational-assistant.component';
+import { ProductCard } from '../../components/product-card/product-card';
 
 @Component({
   selector: 'app-seller-area',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ConversationalAssistantComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ConversationalAssistantComponent, ProductCard],
   templateUrl: './seller-area.component.html',
   styleUrls: ['./seller-area.component.css']
 })
@@ -24,7 +26,7 @@ export class SellerAreaComponent implements OnInit {
   errorMessage = '';
   showAddProductChat: boolean = false;
   storeTheme: string = 'default';
-  currentView: 'store' | 'dashboard' = 'store';
+  currentView: 'store' | 'dashboard' = 'dashboard';
   isEditingStore: boolean = false;
   editedStore: any = {};
   isSaving: boolean = false;
@@ -41,9 +43,11 @@ export class SellerAreaComponent implements OnInit {
   user: any = null;
   sellerOrders: any[] = [];
   sellerChats: any[] = [];
+  sellerReviews: any[] = [];
   ordersLoading = false;
   chatsLoading = false;
-  dashboardTab: 'stats' | 'products' | 'orders' | 'chats' = 'stats';
+  reviewsLoading = false;
+  dashboardTab: 'stats' | 'products' | 'orders' | 'chats' | 'reviews' = 'stats';
 
   // Order filtering and pagination
   ordersFilter: 'all' | 'pending' | 'completed' | 'canceled' = 'all';
@@ -70,7 +74,9 @@ export class SellerAreaComponent implements OnInit {
     private productService: ProductService,
     private toastService: ToastService,
     private authService: AuthService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private reviewService: ReviewService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -189,7 +195,38 @@ export class SellerAreaComponent implements OnInit {
     this.currentView = view;
   }
 
-  setDashboardTab(tab: 'stats' | 'products' | 'orders' | 'chats'): void {
+  getThemeGradient(): string {
+    const customBgColor = this.isEditingStore ? this.editedStore?.background_color : this.store?.background_color;
+    if (customBgColor && customBgColor !== '#f8fafc' && customBgColor !== '') {
+      return customBgColor;
+    }
+
+    const themeToUse = this.isEditingStore ? this.editedStore?.theme : this.store?.theme;
+    const gradients: Record<string, string> = {
+      bakery: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+      fashion: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      home: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+      food: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      tech: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      default: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    };
+    return gradients[themeToUse ?? 'default'] ?? gradients['default'];
+  }
+
+  getLayoutClass(): string {
+    const layout = this.isEditingStore ? this.editedStore?.layout_type : this.store?.layout_type;
+    return `layout-${layout ?? 'grid-3'}`;
+  }
+
+  getBackgroundColor(): string {
+    return '#f8fafc';
+  }
+
+  onAddToCart(product: any): void {
+    this.toastService.show('Vista previa: Agregar al carrito deshabilitado en panel.', 'info');
+  }
+
+  setDashboardTab(tab: 'stats' | 'products' | 'orders' | 'chats' | 'reviews'): void {
     this.dashboardTab = tab;
     this.openChatId = null;
     this.showProductsView = (tab === 'products');
@@ -197,6 +234,8 @@ export class SellerAreaComponent implements OnInit {
       this.loadSellerOrders();
     } else if (tab === 'chats') {
       this.loadSellerChats();
+    } else if (tab === 'reviews') {
+      this.loadSellerReviews();
     }
   }
 
@@ -273,6 +312,10 @@ export class SellerAreaComponent implements OnInit {
       error: (err) => {
         console.error('Error sending message:', err);
         this.newChatMessage = content;
+        
+        // Mostrar mensaje de error del backend (como la alerta de seguridad)
+        const errorMsg = err.error?.detail || 'No se pudo enviar el mensaje.';
+        this.toastService.show(errorMsg, 'error');
       }
     });
   }
@@ -483,5 +526,20 @@ export class SellerAreaComponent implements OnInit {
         });
       }
     );
+  }
+
+  loadSellerReviews(): void {
+    if (!this.store?.id) return;
+    this.reviewsLoading = true;
+    this.reviewService.getStoreReviews(this.store.id).subscribe({
+      next: (reviews) => {
+        this.sellerReviews = reviews;
+        this.reviewsLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading seller reviews:', err);
+        this.reviewsLoading = false;
+      }
+    });
   }
 }

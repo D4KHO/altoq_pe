@@ -7,13 +7,14 @@ import { CategoryService } from '../../services/category.service';
 import { AuthService } from '../../services/auth.service';
 import { SellerService } from '../../services/seller.service';
 import { Category } from '../../models/category';
+import { CategoryIconComponent } from '../category-icon/category-icon';
 import { User } from '../../models/auth';
 import { Observable, map, of } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, CategoryIconComponent],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
 })

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Product } from '../../models/product';
 import { ProductService } from '../../services/product.service';
@@ -7,11 +8,13 @@ import { CartService } from '../../services/cart';
 import { FavoritesService } from '../../services/favorites.service';
 import { ToastService } from '../../services/toast.service';
 import { ProductCard } from '../../components/product-card/product-card';
+import { ReviewService, Review } from '../../services/review.service';
+import { StoreService } from '../../services/store.service';
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductCard],
+  imports: [CommonModule, FormsModule, RouterLink, ProductCard],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.css',
 })
@@ -28,6 +31,22 @@ export class ProductDetailComponent implements OnInit {
   relatedProducts: Product[] = [];
   sizes: string[] = [];
   selectedSize: string | null = null;
+  reviews: Review[] = [];
+  
+  // Pending review & Banner logic
+  canReview = false;
+  pendingOrderId: number | null = null;
+  showReviewBanner = false;
+  storeDetails: any = null;
+
+  // Direct review modal/form state
+  showReviewModal = false;
+  reviewRating = 5;
+  reviewStoreRating = 5;
+  reviewComment = '';
+  reviewImageFile: File | null = null;
+  reviewImagePreview: string | null = null;
+  isSubmittingReview = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -35,6 +54,8 @@ export class ProductDetailComponent implements OnInit {
     private cartService: CartService,
     private favoritesService: FavoritesService,
     private toastService: ToastService,
+    private reviewService: ReviewService,
+    private storeService: StoreService
   ) {}
 
 
@@ -133,17 +154,28 @@ export class ProductDetailComponent implements OnInit {
             this.selectedSize = null;
           }
 
-          // Fetch related products — ONLY same category
-          const productCategory = (product.category || '').toLowerCase();
-          this.productService.getProducts().subscribe({
-            next: (products) => {
-              this.relatedProducts = products
-                .filter(p => p.id !== id && (p.category || '').toLowerCase() === productCategory)
-                .slice(0, 4);
+              // Fetch related products — ONLY same category
+              const productCategory = (product.category || '').toLowerCase();
+              this.productService.getProducts().subscribe({
+                next: (products) => {
+                  this.relatedProducts = products
+                    .filter(p => p.id !== id && (p.category || '').toLowerCase() === productCategory)
+                    .slice(0, 4);
+                }
+              });
+
+              // Fetch reviews
+              this.loadReviews(product.id);
+
+              // Check if user can review
+              this.checkIfUserCanReview(product.id);
+
+              // Fetch store details
+              if (product.store_id) {
+                this.loadStoreDetails(product.store_id);
+              }
             }
-          });
-        }
-        this.loading = false;
+            this.loading = false;
       },
       error: () => {
         this.error = 'No se pudo cargar el producto';
@@ -312,5 +344,158 @@ export class ProductDetailComponent implements OnInit {
     return str.toLowerCase().split(' ').map(word => {
       return word.charAt(0).toUpperCase() + word.slice(1);
     }).join(' ');
+  }
+
+  private loadReviews(productId: number): void {
+    this.reviewService.getProductReviews(productId).subscribe({
+      next: (reviews) => {
+        this.reviews = reviews;
+      },
+      error: (err) => {
+        console.error('Error loading product reviews:', err);
+      }
+    });
+  }
+
+  getStarsForRating(rating: number): number[] {
+    const stars = [];
+    let r = rating;
+    for (let i = 0; i < 5; i++) {
+        if (r >= 1) {
+            stars.push(1);
+            r--;
+        } else if (r >= 0.5) {
+            stars.push(0.5);
+            r = 0;
+        } else {
+            stars.push(0);
+        }
+    }
+    return stars;
+  }
+
+  checkIfUserCanReview(productId: number): void {
+    this.reviewService.checkPendingReview(productId).subscribe({
+      next: (res) => {
+        this.canReview = res.can_review;
+        this.pendingOrderId = res.order_id;
+        this.showReviewBanner = res.can_review;
+      },
+      error: (err) => {
+        console.error('Error checking pending review:', err);
+      }
+    });
+  }
+
+  loadStoreDetails(storeId: number): void {
+    this.storeService.getPublicStore(storeId).subscribe({
+      next: (store) => {
+        this.storeDetails = store;
+      },
+      error: (err) => {
+        console.error('Error loading store details for product:', err);
+      }
+    });
+  }
+
+  openReviewModal(): void {
+    this.reviewRating = 5;
+    this.reviewStoreRating = 5;
+    this.reviewComment = '';
+    this.reviewImageFile = null;
+    this.reviewImagePreview = null;
+    this.showReviewModal = true;
+  }
+
+  closeReviewModal(): void {
+    this.showReviewModal = false;
+  }
+
+  setReviewRating(rating: number): void {
+    this.reviewRating = rating;
+  }
+
+  setReviewStoreRating(rating: number): void {
+    this.reviewStoreRating = rating;
+  }
+
+  onReviewImageSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        this.toastService.show('Por favor selecciona una imagen válida', 'error');
+        return;
+      }
+      this.reviewImageFile = file;
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.reviewImagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  submitReview(): void {
+    if (!this.product || !this.pendingOrderId) return;
+    this.isSubmittingReview = true;
+
+    const saveReview = (imageUrl?: string) => {
+      const reviewData = {
+        product_id: this.product!.id,
+        order_id: this.pendingOrderId!,
+        rating: this.reviewRating,
+        store_rating: this.reviewStoreRating,
+        comment: this.reviewComment || undefined,
+        image_url: imageUrl || undefined
+      };
+
+      this.reviewService.createReview(reviewData).subscribe({
+        next: (review) => {
+          this.toastService.show('¡Reseña publicada exitosamente!', 'success');
+          
+          this.reviews.unshift(review);
+          
+          // Re-calculate product ratings locally
+          const totalRating = this.reviews.reduce((sum, r) => sum + r.rating, 0);
+          this.product!.rating = Number((totalRating / this.reviews.length).toFixed(1));
+          this.product!.rating_count = this.reviews.length;
+          
+          this.canReview = false;
+          this.showReviewBanner = false;
+          this.isSubmittingReview = false;
+          
+          // Reload store details to reflect new ratings/reviews
+          if (this.product!.store_id) {
+            this.loadStoreDetails(this.product!.store_id);
+          }
+
+          this.closeReviewModal();
+        },
+        error: (err) => {
+          console.error('Error submitting review:', err);
+          this.toastService.show('Error al publicar la reseña: ' + (err.error?.detail || err.message), 'error');
+          this.isSubmittingReview = false;
+        }
+      });
+    };
+
+    if (this.reviewImageFile) {
+      this.reviewService.uploadReviewImage(this.reviewImageFile).subscribe({
+        next: (res) => {
+          saveReview(res.image_url);
+        },
+        error: (err) => {
+          console.error('Error uploading review image:', err);
+          this.toastService.show('Error al subir la imagen, guardando reseña sin foto...', 'info');
+          saveReview();
+        }
+      });
+    } else {
+      saveReview();
+    }
+  }
+
+  closeBanner(): void {
+    this.showReviewBanner = false;
   }
 }

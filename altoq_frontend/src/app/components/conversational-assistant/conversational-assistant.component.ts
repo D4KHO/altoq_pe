@@ -29,6 +29,8 @@ export class ConversationalAssistantComponent implements OnInit {
 
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
 
+  private chatSubscription: any = null;
+
   constructor(private sellerService: SellerService) {}
 
   ngOnInit(): void {
@@ -37,6 +39,9 @@ export class ConversationalAssistantComponent implements OnInit {
   }
 
   startConversation(): void {
+    if (this.chatSubscription) {
+      this.chatSubscription.unsubscribe();
+    }
     this.messages = [];
     this.addMessage('assistant', '¡Hola! Soy tu asistente de inteligencia artificial para ayudarte a crear productos. Cuéntame, ¿qué producto deseas vender hoy en tu tienda?');
   }
@@ -53,8 +58,12 @@ export class ConversationalAssistantComponent implements OnInit {
     this.isTyping = true;
     this.isCreatingProduct = true;
 
+    if (this.chatSubscription) {
+      this.chatSubscription.unsubscribe();
+    }
+
     // Call the backend AI endpoint
-    this.sellerService.chatWithAiProductAssistant(this.messages).subscribe({
+    this.chatSubscription = this.sellerService.chatWithAiProductAssistant(this.messages).subscribe({
       next: (response) => {
         this.isTyping = false;
         this.isCreatingProduct = false;

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routes import products, auth, orders, admin_auth, admin_users, admin_stores, categories, users, chat, templates, delivery, seller, metrics, ai_assistant, ai_product_assistant, stores, admin_metrics, inquiry
+from .routes import products, auth, orders, admin_auth, admin_users, admin_stores, categories, users, chat, templates, delivery, seller, metrics, ai_assistant, ai_product_assistant, stores, admin_metrics, inquiry, reviews
 
 # Las tablas ahora se crean con Alembic (migraciones).
 # Ejecuta: python -m alembic upgrade head
@@ -60,11 +60,13 @@ app.include_router(ai_product_assistant.router)
 app.include_router(metrics.router)
 app.include_router(stores.router)
 app.include_router(inquiry.router)
+app.include_router(reviews.router)
 
 from fastapi.staticfiles import StaticFiles
 import os
 
 os.makedirs("static/uploads/products", exist_ok=True)
+os.makedirs("static/uploads/reviews", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")

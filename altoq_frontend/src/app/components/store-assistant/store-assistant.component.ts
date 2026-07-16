@@ -21,6 +21,8 @@ export class StoreAssistantComponent implements OnInit {
   isTyping: boolean = false;
   isCreatingStore: boolean = false;
   storeCreated: boolean = false;
+  
+  private chatSubscription: any = null;
 
   constructor(
     private sellerService: SellerService,
@@ -34,8 +36,12 @@ export class StoreAssistantComponent implements OnInit {
 
   startConversation(): void {
     // Send an initial "hola" from the user to trigger the AI greeting
+    if (this.chatSubscription) {
+      this.chatSubscription.unsubscribe();
+    }
+    
     this.isTyping = true;
-    this.sellerService.chatWithAiStoreAssistant([
+    this.chatSubscription = this.sellerService.chatWithAiStoreAssistant([
       { sender: 'user', content: 'Hola, quiero crear mi tienda' }
     ]).subscribe({
       next: (response) => {
@@ -62,8 +68,12 @@ export class StoreAssistantComponent implements OnInit {
     this.addMessage('user', input);
     this.isTyping = true;
 
+    if (this.chatSubscription) {
+      this.chatSubscription.unsubscribe();
+    }
+
     // Send full conversation history to the AI backend
-    this.sellerService.chatWithAiStoreAssistant(this.messages).subscribe({
+    this.chatSubscription = this.sellerService.chatWithAiStoreAssistant(this.messages).subscribe({
       next: (response) => {
         this.isTyping = false;
         this.addMessage('assistant', response.reply);

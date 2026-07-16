@@ -53,61 +53,193 @@
       </button>
     </div>
 
-    <!-- Vista de Tienda (cómo la ven los clientes) -->
-    <div *ngIf="currentView === 'store'" class="store-view">
-      <!-- Header de la tienda con tema -->
-      <div class="store-header">
-        <div class="store-banner"></div>
-        <div class="store-info">
-          <h1 class="store-name">{{ store.name }}</h1>
-          <p class="store-description">{{ store.description }}</p>
-          <div class="store-meta">
-            <span *ngIf="store.email" class="meta-item">
-              {{ store.email }}
-            </span>
-            <span *ngIf="store.phone" class="meta-item">
-              {{ store.phone }}
-            </span>
-            <span *ngIf="store.ruc" class="meta-item">
-              RUC: {{ store.ruc }}
-            </span>
-            <span class="meta-item">
-              <span class="status-badge" [class.active]="store.status === 'active'" [class.pending]="store.status === 'pending'">
-                {{ store.status === 'active' ? 'Activa' : 'Pendiente' }}
-              </span>
-            </span>
+    <!-- Vista de Tienda (cómo la ven los clientes, pero editable dentro de la misma sección) -->
+    <div *ngIf="currentView === 'store' && store" class="store-page-bg bg-[#f8fafc] w-full min-h-screen border border-slate-200 rounded-2xl overflow-hidden mt-4 shadow-inner">
+      
+      <!-- Owner Administration Toolbar in Preview -->
+      <div class="bg-indigo-950 text-white py-3 px-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs font-black tracking-wider uppercase text-slate-200">Panel de Personalización en Vivo (Vista Previa de Vendedor)</span>
+        </div>
+        <div class="flex gap-2">
+          <button *ngIf="!isEditingStore" (click)="toggleEditStore()" class="bg-white hover:bg-slate-100 text-indigo-950 px-3.5 py-1.5 rounded-xl font-black text-xs transition cursor-pointer border-0 select-none">
+            Personalizar Aspecto
+          </button>
+          <button *ngIf="isEditingStore" (click)="toggleEditStore()" class="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition cursor-pointer border-0 select-none">
+            Cancelar
+          </button>
+          <button *ngIf="isEditingStore" (click)="saveStoreChanges()" [disabled]="isSaving" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-xl font-black text-xs transition cursor-pointer border-0 select-none flex items-center gap-1.5 disabled:opacity-50">
+            <svg *ngIf="isSaving" class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            {{ isSaving ? 'Guardando...' : 'Confirmar y Guardar' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel de Personalización de Tienda (Cuando está en modo edición) -->
+      <div *ngIf="isEditingStore" class="bg-white border-b border-slate-200 p-6 text-left shadow-sm">
+        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-indigo-600">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122l9.37-9.37a2.121 2.121 0 113 3l-9.37 9.37a2.121 2.121 0 01-1.06.576l-3.51.878a.375.375 0 01-.456-.456l.878-3.51a2.121 2.121 0 01.576-1.06l9.37-9.37z" />
+          </svg>
+          Configuración del Diseño de Tienda
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Nombre -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600">Nombre de la Tienda:</label>
+            <input type="text" [(ngModel)]="editedStore.name" class="border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-850 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full">
+          </div>
+          
+          <!-- Eslogan -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600">Eslogan / Descripción:</label>
+            <input type="text" [(ngModel)]="editedStore.description" class="border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-850 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full">
+          </div>
+
+          <!-- Enlace Logo -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600">Enlace de Logo (URL):</label>
+            <input type="text" [(ngModel)]="editedStore.logo" class="border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-850 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full" placeholder="https://ejemplo.com/logo.png">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-4">
+          <!-- Fondo de Cabecera -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600">Color de Cabecera (Banner):</label>
+            <div class="flex items-center gap-2">
+              <input type="color" [(ngModel)]="editedStore.background_color" class="w-10 h-10 border border-slate-200 rounded-xl cursor-pointer p-0 bg-transparent shrink-0">
+              <input type="text" [(ngModel)]="editedStore.background_color" class="border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-850 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 flex-1">
+            </div>
+          </div>
+
+          <!-- Tema de Banner -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600">Gradiente / Tema predefinido:</label>
+            <select [(ngModel)]="editedStore.theme" class="border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-850 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white">
+              <option value="default">Por Defecto (Púrpura)</option>
+              <option value="tech">Tecnología (Celeste)</option>
+              <option value="food">Comida (Fucsia/Rosa)</option>
+              <option value="fashion">Moda (Púrpura oscuro)</option>
+              <option value="home">Hogar (Verde/Esmeralda)</option>
+              <option value="bakery">Pastelería (Naranja/Coral)</option>
+            </select>
+          </div>
+
+          <!-- Distribución -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600">Distribución de Productos:</label>
+            <select [(ngModel)]="editedStore.layout_type" class="border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-850 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white">
+              <option value="grid-2">2 Columnas (Grande)</option>
+              <option value="grid-3">3 Columnas (Mediano - Recomendado)</option>
+              <option value="grid-4">4 Columnas (Pequeño)</option>
+              <option value="list">Lista Horizontal</option>
+            </select>
           </div>
         </div>
       </div>
 
-      <!-- Productos de la tienda -->
-      <div class="products-section">
-        <h2 class="section-title">Productos de {{ store.name }}</h2>
-        
-        <div *ngIf="storeProducts.length === 0" class="no-products">
-          <p>Tu tienda aún no tiene productos.</p>
-        </div>
-        
-        <div class="products-grid">
-          <div *ngFor="let product of storeProducts" class="product-card">
-            <div class="product-image">
-              <img [src]="product.image || 'https://placehold.co/300x200'" [alt]="product.name">
+      <!-- Banner -->
+      <div class="store-banner" [style.background]="getThemeGradient()">
+        <div class="store-banner-overlay" [style.min-height]="'180px'">
+          <div class="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-start md:items-end gap-6 w-full text-left">
+
+            <!-- Logo -->
+            <div class="store-logo-wrapper shrink-0">
+              <img *ngIf="isEditingStore ? editedStore.logo : store.logo" [src]="isEditingStore ? editedStore.logo : store.logo" [alt]="isEditingStore ? editedStore.name : store.name" class="w-full h-full object-cover rounded-xl bg-white">
+              <div *ngIf="!(isEditingStore ? editedStore.logo : store.logo)" class="w-full h-full flex items-center justify-center bg-white/20 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                </svg>
+              </div>
             </div>
-            <div class="product-info">
-              <h3 class="product-name">{{ product.name }}</h3>
-              <p class="product-description">{{ product.description }}</p>
-              <div class="product-meta">
-                <span class="product-price">S/. {{ product.price }}</span>
-                <span class="product-rating flex items-center gap-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-yellow-400">
-                    <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
-                  </svg>
-                  {{ product.rating }}
+
+            <!-- Info -->
+            <div class="text-white pb-1 flex-grow min-w-0">
+              <h1 class="text-3xl font-bold drop-shadow text-white">
+                {{ isEditingStore ? editedStore.name : store.name }}
+              </h1>
+              <p class="text-white/80 text-sm mt-1 max-w-lg leading-relaxed">
+                {{ (isEditingStore ? editedStore.description : store.description) || 'Sin descripción' }}
+              </p>
+              
+              <!-- Stars & sales in banner -->
+              <div class="flex items-center gap-2 mt-3 text-xs font-bold text-white flex-wrap">
+                <span class="bg-black/35 backdrop-blur-[2px] px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm border border-white/10">
+                  <span class="text-amber-300 font-black text-sm">{{ (store.rating | number:'1.1-1') || '0.0' }}</span>
+                  <span class="flex gap-0.5 text-amber-300">
+                    <svg *ngFor="let s of [1,2,3,4,5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5" [class.text-amber-300]="s <= (store.rating || 0)" [class.text-white/25]="s > (store.rating || 0)">
+                      <path fill-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.6 3.102-1.1 4.622c-.237.996.84 1.746 1.705 1.19L10 15.655l4.137 2.576c.865.556 1.942-.194 1.706-1.19l-1.1-4.622 3.6-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clip-rule="evenodd" />
+                    </svg>
+                  </span>
+                  <span class="text-white/70">({{ store.rating_count || 0 }} reseñas)</span>
+                </span>
+                <span class="bg-black/35 backdrop-blur-[2px] px-3 py-1.5 rounded-xl text-white/90 shadow-sm border border-white/10">
+                  {{ store.sales || 0 }} ventas completadas
                 </span>
               </div>
-              <button class="view-product-btn">Ver Producto</button>
             </div>
+
           </div>
+        </div>
+      </div>
+
+      <!-- Store Meta Bar -->
+      <div class="bg-white border-b border-slate-200 shadow-sm flex">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center gap-5 text-sm text-slate-600 w-full text-left">
+          <!-- Phone -->
+          <span *ngIf="store.phone" class="flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            {{ store.phone }}
+          </span>
+
+          <!-- RUC -->
+          <span *ngIf="store.ruc" class="flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            RUC: {{ store.ruc }}
+          </span>
+
+          <!-- Status badge -->
+          <span class="ml-auto flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-0.5 text-xs font-semibold">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+            Tienda activa (Vista Previa de Vendedor)
+          </span>
+        </div>
+      </div>
+
+      <!-- Products Section -->
+      <div class="max-w-6xl mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-slate-800 text-left">
+            Productos de {{ store.name }}
+            <span class="ml-2 text-sm font-normal text-slate-500">({{ storeProducts.length }} artículos)</span>
+          </h2>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="storeProducts.length === 0" class="flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl border border-slate-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+          <p class="text-slate-500 font-medium">Esta tienda aún no tiene productos disponibles.</p>
+        </div>
+
+        <!-- Products grid -->
+        <div *ngIf="storeProducts.length > 0" class="products-grid" [ngClass]="getLayoutClass()">
+          <app-product-card
+            *ngFor="let product of storeProducts"
+            [product]="product"
+            (addToCart)="onAddToCart($event)">
+          </app-product-card>
         </div>
       </div>
     </div>
@@ -132,6 +264,9 @@
         </button>
         <button (click)="setDashboardTab('chats')" [class.active]="dashboardTab === 'chats'" class="action-button secondary">
           Mensajes / Consultas
+        </button>
+        <button (click)="setDashboardTab('reviews')" [class.active]="dashboardTab === 'reviews'" class="action-button secondary">
+          Reseñas de Clientes
         </button>
         <button (click)="toggleAddProductChat()" class="action-button primary flex-shrink-0 ml-auto">
           + Agregar Producto
@@ -280,8 +415,11 @@
                 <div>
                   <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Código de Entrega</h3>
                   <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-                    <div class="text-lg font-bold text-slate-600 tracking-wider">
-                      🔑 Retenido
+                    <div class="text-lg font-bold text-slate-600 tracking-wider flex items-center justify-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-amber-500 shrink-0">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                      <span>Retenido</span>
                     </div>
                     <p class="text-[10px] text-slate-500 mt-1.5">
                       El comprador tiene el código de entrega. Solicítalo al momento de entregar el pedido para liberar el pago.
@@ -541,6 +679,76 @@
         </div>
       </div>
 
+      <!-- Vista de Reseñas de Clientes para el Vendedor -->
+      <div *ngIf="dashboardTab === 'reviews'" class="reviews-view mt-6">
+        <div class="products-view-header mb-6">
+          <h2>Opiniones de Clientes</h2>
+          <p class="text-sm text-slate-500">Consulta las valoraciones y comentarios que los compradores han dejado sobre tus productos.</p>
+        </div>
+
+        <!-- Cargando -->
+        <div *ngIf="reviewsLoading" class="text-center py-10">
+          <div class="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-650 rounded-full animate-spin"></div>
+          <p class="text-slate-500 mt-3 font-medium">Cargando valoraciones...</p>
+        </div>
+
+        <!-- Sin reseñas -->
+        <div *ngIf="!reviewsLoading && sellerReviews.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-slate-200">
+          <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.545.044.757.746.357 1.107l-4.201 3.804a.563.563 0 00-.163.505l1.282 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.163-.505l-4.202-3.804c-.399-.36-.188-1.063.357-1.107l5.519-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+            </svg>
+          </div>
+          <p class="text-sm font-bold text-slate-700">Aún no hay valoraciones para tus productos</p>
+          <p class="text-xs text-slate-400 mt-1">Cuando los compradores finalicen un pedido y dejen su opinión, aparecerán en esta sección.</p>
+        </div>
+
+        <!-- Lista de reseñas -->
+        <div *ngIf="!reviewsLoading && sellerReviews.length > 0" class="space-y-4">
+          <div *ngFor="let rev of sellerReviews" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-start text-left">
+            
+            <!-- Info del Cliente e Item -->
+            <div class="w-full md:w-56 shrink-0">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs uppercase">
+                  {{ (rev.user_name || 'U') | slice:0:1 }}
+                </div>
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800 truncate max-w-[150px]">{{ rev.user_name || 'Comprador Anónimo' }}</h4>
+                  <span class="text-[9px] text-slate-400 font-bold block">{{ rev.created_at | date:'dd MMM yyyy, h:mm a' }}</span>
+                </div>
+              </div>
+
+              <!-- Stars -->
+              <div class="flex gap-0.5 text-amber-400 mb-2">
+                <svg *ngFor="let star of [1,2,3,4,5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5" [class.text-amber-400]="star <= rev.rating" [class.text-slate-200]="star > rev.rating">
+                  <path fill-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.6 3.1-.969 4.607c-.15 1.002.939 1.79 1.83 1.25L10 15.653l4.137 2.62c.89.54 1.98-.248 1.83-1.25l-.97-4.607 3.6-3.1c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clip-rule="evenodd" />
+                </svg>
+              </div>
+
+              <!-- Order link reference -->
+              <span class="inline-block bg-slate-100 text-slate-655 rounded text-[9px] font-extrabold px-2 py-0.5">
+                Pedido #{{ rev.order_id }}
+              </span>
+            </div>
+
+            <!-- Comentario y Foto -->
+            <div class="flex-1 space-y-2.5">
+              <p class="text-xs text-slate-700 leading-relaxed font-semibold">
+                {{ rev.comment || 'Calificó sin dejar comentarios.' }}
+              </p>
+
+              <!-- Foto de la entrega (si la subió el cliente) -->
+              <div *ngIf="rev.image_url" class="mt-1">
+                <a [href]="rev.image_url" target="_blank" class="inline-block rounded-lg overflow-hidden border border-slate-150 bg-slate-50 hover:opacity-90 transition">
+                  <img [src]="rev.image_url" class="h-20 md:h-24 max-w-full object-cover" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Estadísticas rápidas -->
       <div class="stats-grid" *ngIf="dashboardTab === 'stats'">
         <div class="stat-card">
@@ -554,21 +762,22 @@
           <div class="stat-color stat-sales"></div>
           <div class="stat-info">
             <h3>Ventas</h3>
-            <p class="stat-value">0</p>
+            <p class="stat-value">{{ store?.sales || 0 }}</p>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-color stat-rating"></div>
-          <div class="stat-info">
+          <div class="stat-info flex flex-col justify-center">
             <h3>Calificación</h3>
-            <p class="stat-value">4.5</p>
+            <p class="stat-value">{{ (store?.rating | number:'1.1-1') || '0.0' }}</p>
+            <span class="text-[10px] text-slate-400 font-bold">({{ store?.rating_count || 0 }} reseñas)</span>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-color stat-clients"></div>
           <div class="stat-info">
             <h3>Clientes</h3>
-            <p class="stat-value">0</p>
+            <p class="stat-value">{{ store?.clients || 0 }}</p>
           </div>
         </div>
       </div>
@@ -605,6 +814,22 @@
             <span class="label">Descripción:</span>
             <span class="value">{{ store.description || 'Sin descripción' }}</span>
           </div>
+          <div class="info-item">
+            <span class="label">Color de Fondo:</span>
+            <span class="value flex items-center gap-2">
+              <span class="w-4 h-4 rounded border border-slate-200 inline-block" [style.backgroundColor]="store.background_color ?? '#f8fafc'"></span>
+              {{ store.background_color || '#f8fafc' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="label">Diseño de Productos:</span>
+            <span class="value">
+              {{ store.layout_type === 'grid-2' ? '2 Columnas' :
+                 store.layout_type === 'grid-3' ? '3 Columnas (Recomendado)' :
+                 store.layout_type === 'grid-4' ? '4 Columnas' :
+                 store.layout_type === 'list' ? 'Lista Horizontal' : '3 Columnas (Recomendado)' }}
+            </span>
+          </div>
         </div>
 
         <!-- Formulario de edición -->
@@ -628,6 +853,22 @@
           <div class="form-group full-width">
             <label>Descripción:</label>
             <textarea [(ngModel)]="editedStore.description" class="form-input" rows="4"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Color de fondo de tienda:</label>
+            <div class="flex items-center gap-2">
+              <input type="color" [(ngModel)]="editedStore.background_color" class="w-10 h-10 border border-slate-200 rounded cursor-pointer p-0 bg-transparent">
+              <input type="text" [(ngModel)]="editedStore.background_color" class="form-input flex-1" placeholder="#f8fafc">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Diseño de productos:</label>
+            <select [(ngModel)]="editedStore.layout_type" class="form-input">
+              <option value="grid-2">2 Columnas (Grande)</option>
+              <option value="grid-3">3 Columnas (Mediano)</option>
+              <option value="grid-4">4 Columnas (Pequeño)</option>
+              <option value="list">Lista Horizontal</option>
+            </select>
           </div>
           <div class="form-actions">
             <button (click)="saveStoreChanges()" class="save-btn" [disabled]="isSaving">
