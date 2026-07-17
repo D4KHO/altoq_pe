@@ -225,6 +225,49 @@
         <app-product-card *ngFor="let product of storeProducts" [product]="product" (addToCart)="onAddToCart($event)">
         </app-product-card>
       </div>
+
+      <!-- Formulario de Consultas (Ciclo 9) -->
+      <div class="mt-16 max-w-2xl mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 text-left">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-slate-800">¿Tienes dudas? Envía una consulta</h3>
+            <p class="text-xs text-slate-500">El vendedor te responderá directamente. Si no tienes cuenta, te crearemos una de forma transparente.</p>
+          </div>
+        </div>
+
+        <form (submit)="onSubmitInquiry()" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-bold text-slate-600">Nombre Completo *</label>
+              <input type="text" [(ngModel)]="inquiryName" name="inquiryName" required placeholder="Ej. Juan Pérez" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-bold text-slate-600">Correo Electrónico *</label>
+              <input type="email" [(ngModel)]="inquiryEmail" name="inquiryEmail" required placeholder="ejemplo@correo.com" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600">Celular (Opcional)</label>
+            <input type="text" [(ngModel)]="inquiryPhone" name="inquiryPhone" placeholder="Ej. 987654321" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition">
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600">Mensaje de Consulta *</label>
+            <textarea [(ngModel)]="inquiryMessage" name="inquiryMessage" required rows="4" placeholder="Escribe aquí tu consulta para la tienda..." class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition resize-none"></textarea>
+          </div>
+
+          <button type="submit" [disabled]="isSendingInquiry" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3 px-6 text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
+            <span *ngIf="isSendingInquiry" class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span>{{ isSendingInquiry ? 'Enviando consulta...' : 'Enviar Consulta de Invitado' }}</span>
+          </button>
+        </form>
+      </div>
     </div>
 
   </div>

@@ -7,6 +7,8 @@ import { CartService } from '../../services/cart';
 import { AuthService } from '../../services/auth.service';
 import { SellerService } from '../../services/seller.service';
 import { ProductCard } from '../../components/product-card/product-card';
+import { ChatService } from '../../services/chat.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-store-page',
@@ -26,13 +28,22 @@ export class StorePageComponent implements OnInit {
   tempStore: any = null;
   isSaving = false;
 
+  // Formulario de consulta
+  inquiryName = '';
+  inquiryEmail = '';
+  inquiryPhone = '';
+  inquiryMessage = '';
+  isSendingInquiry = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private storeService: StoreService,
     private cartService: CartService,
     private authService: AuthService,
-    private sellerService: SellerService
+    private sellerService: SellerService,
+    private chatService: ChatService,
+    private toastService: ToastService
   ) { }
 
   ngOnInit(): void {
@@ -146,6 +157,37 @@ export class StorePageComponent implements OnInit {
       error: (err) => {
         console.error('Error saving store changes:', err);
         this.isSaving = false;
+      }
+    });
+  }
+
+  onSubmitInquiry(): void {
+    if (!this.store) return;
+    if (!this.inquiryName || !this.inquiryEmail || !this.inquiryMessage) {
+      this.toastService.show('Por favor, completa los campos requeridos.', 'error');
+      return;
+    }
+    this.isSendingInquiry = true;
+    this.chatService.sendInquiry(
+      this.store.id,
+      this.inquiryName,
+      this.inquiryEmail,
+      this.inquiryPhone,
+      this.inquiryMessage
+    ).subscribe({
+      next: (res) => {
+        this.toastService.show('¡Consulta enviada! Se ha creado una cuenta temporal para ti con tu correo.', 'success');
+        this.inquiryName = '';
+        this.inquiryEmail = '';
+        this.inquiryPhone = '';
+        this.inquiryMessage = '';
+        this.isSendingInquiry = false;
+      },
+      error: (err) => {
+        console.error('Error al enviar consulta:', err);
+        const errMsg = err.error?.detail || 'Error al enviar la consulta. Intenta nuevamente.';
+        this.toastService.show(errMsg, 'error');
+        this.isSendingInquiry = false;
       }
     });
   }
