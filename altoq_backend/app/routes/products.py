@@ -10,16 +10,35 @@ from ..schemas.product import ProductResponse as Product, ProductCreate, Product
 router = APIRouter(prefix="/api/products", tags=["products"])
 
 
-def _populate_product_sales(db: Session, product: ProductModel):
-    # Calcular cantidad de ventas en pedidos completados
+def _populate_products_sales(db: Session, products: List[ProductModel]):
+    """Poblar el total de ventas acumuladas para una lista de productos en una única consulta de base de datos."""
+    if not products:
+        return products
+        
+    product_ids = {p.id for p in products}
+    # Traer todas las órdenes completadas una sola vez
     completed_orders = db.query(OrderModel).filter(OrderModel.status == "completed").all()
-    sales_count = 0
+    
+    # Calcular y acumular ventas en memoria
+    sales_map = {}
     for order in completed_orders:
         products_json = order.products or []
         for p in products_json:
-            if isinstance(p, dict) and p.get("productId") == product.id:
-                sales_count += p.get("quantity", 1)
-    product.sales = sales_count
+            if isinstance(p, dict):
+                p_id = p.get("productId")
+                if p_id in product_ids:
+                    qty = p.get("quantity", 1)
+                    sales_map[p_id] = sales_map.get(p_id, 0) + qty
+                    
+    for p in products:
+        p.sales = sales_map.get(p.id, 0)
+        
+    return products
+
+
+def _populate_product_sales(db: Session, product: ProductModel):
+    """Fallback compatible con llamadas a productos individuales."""
+    _populate_products_sales(db, [product])
     return product
 
 
@@ -31,8 +50,7 @@ def get_products_by_category(slug: str, skip: int = 0, limit: int = 100, db: Ses
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
     products = db.query(ProductModel).filter(ProductModel.category_id == category.id).offset(skip).limit(limit).all()
-    for p in products:
-        _populate_product_sales(db, p)
+    _populate_products_sales(db, products)
     return products
 
 
@@ -93,11 +111,12 @@ def search_products(q: str, skip: int = 0, limit: int = 100, db: Session = Depen
     # Ordenar por relevancia descendente
     scored_products.sort(key=lambda item: item[1], reverse=True)
     
-    # Extraer los productos ordenados, poblar ventas y aplicar paginación
+    # Extraer los productos ordenados, aplicar paginación y poblar ventas por lote
     paginated_products = []
     for p, score in scored_products[skip : skip + limit]:
-        _populate_product_sales(db, p)
         paginated_products.append(p)
+        
+    _populate_products_sales(db, paginated_products)
         
     return paginated_products
 
@@ -106,8 +125,7 @@ def search_products(q: str, skip: int = 0, limit: int = 100, db: Session = Depen
 def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Obtener lista de productos"""
     products = db.query(ProductModel).order_by(ProductModel.id.desc()).offset(skip).limit(limit).all()
-    for p in products:
-        _populate_product_sales(db, p)
+    _populate_products_sales(db, products)
     return products
 
 
@@ -117,7 +135,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    _populate_product_sales(db, product)
+    _populate_products_sales(db, [product])
     return product
 
 
@@ -143,7 +161,7 @@ def update_product(product_id: int, product: ProductUpdate, db: Session = Depend
     
     db.commit()
     db.refresh(db_product)
-    _populate_product_sales(db, db_product)
+    _populate_products_sales(db, [db_product])
     return db_product
 
 
